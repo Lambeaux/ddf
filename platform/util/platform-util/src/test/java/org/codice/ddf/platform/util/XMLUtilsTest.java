@@ -43,9 +43,14 @@ public class XMLUtilsTest {
 
     private static final String XML = "<node>Valid-XML</node>";
 
-    private static final String PRETTY_XML_SOURCE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><node>Valid-XML</node>\n";
+    private static final String PRETTY_XML_SOURCE =
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?><node>Valid-XML</node>"
+            + System.lineSeparator();
 
-    private static final String PRETTY_XML_NODE = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<node>Valid-XML</node>\n";
+    private static final String PRETTY_XML_NODE =
+            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>"
+            + System.lineSeparator() + "<node>Valid-XML</node>"
+            + System.lineSeparator();
 
     @Test
     public void testFormatSource() throws ParserConfigurationException, IOException, SAXException {
