@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
@@ -72,24 +73,27 @@ public class ApplicationFileInstaller {
                 LOGGER.debug("Installing {} to the system repository.",
                         application.getAbsolutePath());
                 String featureLocation = installToRepo(appZip);
-                String uri = URI_PROTOCOL + new File("").getAbsolutePath() + File.separator
-                        + REPO_LOCATION + featureLocation;
+                String uri = //URI_PROTOCOL //+ "\\\\\\"
+                         new File("").getAbsolutePath()
+                        + File.separator
+                        + REPO_LOCATION
+                        + featureLocation;
 
                 // lets standardize the file separators in this uri.
                 // It fails on windows if we do not use.
-                uri = uri.replace("\\", "/");
-                return new URI(uri);
+                //uri = uri.replace("\\", "/");
+                return Paths.get(uri).toUri();
             }
 
         } catch (ZipException ze) {
             LOGGER.warn("Got an error when trying to read the application as a zip file.", ze);
         } catch (IOException ioe) {
             LOGGER.warn("Got an error when trying to read the incoming application.", ioe);
-        } catch (URISyntaxException e) {
+        } /*catch (URISyntaxException e) {
             LOGGER.warn(
                     "Installed application but could not obtain correct location to feature file.",
                     e);
-        } finally {
+        }*/ finally {
             IOUtils.closeQuietly(appZip);
         }
 
