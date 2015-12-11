@@ -23,9 +23,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.net.URI;
-import java.net.URL;
 
-import org.codice.ddf.admin.application.service.Application;
 import org.codice.ddf.admin.application.service.ApplicationServiceException;
 import org.junit.Before;
 import org.junit.Test;
@@ -78,11 +76,7 @@ public class ApplicationFileInstallerTest {
     @Test
     public void testInstall() throws Exception {
 
-        ApplicationFileInstaller testInstaller = new ApplicationFileInstaller();
         File testFile = new File(File.class.getResource(TEST_FILE_NAME).getPath());
-
-        //boolean match =
-        //        ApplicationFileInstaller.install(testFile).getPath().matches("(/.+)+");
 
         URI mUri = ApplicationFileInstaller.install(testFile);
         String mPath = mUri.getPath();
