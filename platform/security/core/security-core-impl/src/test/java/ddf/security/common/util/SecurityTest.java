@@ -133,6 +133,9 @@ public class SecurityTest {
     }
 
     @Test
+    /* TODO: Test 1 causing path exceptions
+        Bad format in the value of system property: "javax.net.ssl.keyStore"
+    */
     public void testGetSystemSubject() throws Exception {
         System.setProperty("org.codice.ddf.system.hostname", "server");
         configurMocksForBundleContext();
@@ -141,6 +144,9 @@ public class SecurityTest {
     }
 
     @Test
+    /* TODO: Test 2 causing path exceptions
+        Bad format in the value of system property: "javax.net.ssl.keyStore"
+    */
     public void testGetSystemSubjectBadAlias() throws Exception {
         System.setProperty("org.codice.ddf.system.hostname", "bad-alias");
         configurMocksForBundleContext();

@@ -231,7 +231,23 @@ public class Security {
                     System.getProperty("javax.net.ssl.keyStoreType"), e);
             return null;
         }
-        Path keyStoreFile = Paths.get(System.getProperty("javax.net.ssl.keyStore"));
+
+        // TODO: FIX ABSOLUTE PATH ASSIGNMENTS TO SYSTEM PROPERTIES
+        //      This is the "band-aid" for the problem so we can get a build running
+        //      This is not a permanent fix!!!
+        //  ------------------------------------------------------------------------
+        String propValue = System.getProperty("javax.net.ssl.keyStore");
+
+        // Instead of removing the ':', we remove the first slash IFF on windows
+        //  by computing a regular expression that detects the colon
+        propValue = propValue.replaceFirst("^/(.:/)", "$1");
+
+        //propValue = propValue.replace(":", "");
+        Path keyStoreFile = Paths.get(propValue);
+
+        //  ------------------------------------------------------------------------
+        //ORIGINAL CODE:
+        //Path keyStoreFile = Paths.get(System.getProperty("javax.net.ssl.keyStore"));
 
         Path ddfHomePath = Paths.get(System.getProperty("ddf.home"));
         if (!keyStoreFile.isAbsolute()) {
