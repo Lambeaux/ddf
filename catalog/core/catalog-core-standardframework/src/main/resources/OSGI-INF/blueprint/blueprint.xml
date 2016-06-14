@@ -374,7 +374,6 @@
                 <property name="pool" ref="queryThreadPool"/>
                 <property name="queryResponsePostProcessor" ref="queryResponsePostProcessor"/>
                 <property name="sourcePoller" ref="sourcePoller"/>
-                <property name="resourceCache" ref="deprecatedProductCache"/>
                 <property name="downloadsStatusEventPublisher" ref="retrieveStatusEventPublisher"/>
                 <property name="reliableResourceDownloadManager"
                           ref="reliableResourceDownloadManager"/>
@@ -388,7 +387,7 @@
             </bean>
         </argument>
         <property name="masker" ref="sourceListener"/>
-        <property name="cacheEnabled" value="true"/>
+        <!--<property name="cacheEnabled" value="true"/>-->
         <property name="delayBetweenRetryAttempts" value="10"/>
         <property name="maxRetryAttempts" value="3"/>
         <property name="retrievalMonitorPeriod" value="5"/>

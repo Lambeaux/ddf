@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Stopwatch;
 
 import ddf.catalog.cache.impl.ResourceCacheImpl;
+import ddf.catalog.cache.impl.CacheKey;
 import ddf.catalog.data.Metacard;
 import ddf.catalog.event.retrievestatus.DownloadStatusInfo;
 import ddf.catalog.event.retrievestatus.DownloadsStatusEventListener;
@@ -34,6 +35,7 @@ import ddf.catalog.event.retrievestatus.DownloadsStatusEventPublisher.ProductRet
 import ddf.catalog.operation.ResourceRequest;
 import ddf.catalog.operation.ResourceResponse;
 import ddf.catalog.operation.impl.ResourceResponseImpl;
+import ddf.catalog.resource.Resource;
 import ddf.catalog.resource.ResourceNotFoundException;
 import ddf.catalog.resource.ResourceNotSupportedException;
 import ddf.catalog.resourceretriever.ResourceRetriever;
@@ -123,58 +125,73 @@ public class ReliableResourceDownloadManager {
             throw new DownloadException("Cannot download resource if request is null");
         }
 
-        try {
-            resourceResponse = retriever.retrieveResource();
-        } catch (ResourceNotFoundException | ResourceNotSupportedException | IOException e) {
-            throw new DownloadException("Cannot download resource", e);
+        if (downloaderConfig.isCacheEnabled()) {
+            Resource cachedResource = downloaderConfig.getResourceCache()
+                    .getValid(new CacheKey(metacard, resourceRequest).generateKey(), metacard);
+            if (cachedResource != null) {
+                resourceResponse = new ResourceResponseImpl(resourceRequest,
+                        resourceRequest.getProperties(),
+                        cachedResource);
+                LOGGER.debug("Successfully retrieved product from cache for metacard ID = {}",
+                        metacard.getId());
+            } else {
+                LOGGER.debug("Unable to get resource from cache. Have to retrieve it from source");
+            }
         }
 
-        resourceResponse.getProperties()
-                .put(Metacard.ID, metacard.getId());
-        // Sources do not create ResourceResponses with the original ResourceRequest, hence
-        // it is added here because it will be needed for caching
-        resourceResponse = new ResourceResponseImpl(resourceRequest,
-                resourceResponse.getProperties(),
-                resourceResponse.getResource());
-
-        // TODO - this should be before retrieveResource() but eventPublisher requires a
-        // resourceResponse and that resource response must have a resource request in it (to get
-        // USER property)
-        eventPublisher.postRetrievalStatus(resourceResponse,
-                ProductRetrievalStatus.STARTED,
-                metacard,
-                null,
-                0L,
-                downloadIdentifier);
-
-        AtomicBoolean downloadStarted = new AtomicBoolean(Boolean.FALSE);
-        ReliableResourceDownloader downloader = new ReliableResourceDownloader(downloaderConfig,
-                downloadStarted,
-                downloadIdentifier,
-                resourceResponse,
-                retriever);
-        resourceResponse = downloader.setupDownload(metacard, downloadStatusInfo);
-
-        // Start download in separate thread so can return ResourceResponse with
-        // ReliableResourceInputStream available for client to start reading from
-        executor.submit(downloader);
-
-        // Wait for download to get started before returning control to client
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        while (!downloadStarted.get()) {
+        if (resourceResponse == null) {
             try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
+                resourceResponse = retriever.retrieveResource();
+            } catch (ResourceNotFoundException | ResourceNotSupportedException | IOException e) {
+                throw new DownloadException("Cannot download resource", e);
             }
-            long elapsedTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-            if (elapsedTime > ONE_SECOND_IN_MS) {
-                LOGGER.debug("downloadStarted still FALSE - elapsedTime = {}", elapsedTime);
-                break;
-            }
-        }
-        LOGGER.debug("elapsedTime = {}", stopwatch.elapsed(TimeUnit.MILLISECONDS));
-        stopwatch.stop();
 
+            resourceResponse.getProperties()
+                    .put(Metacard.ID, metacard.getId());
+            // Sources do not create ResourceResponses with the original ResourceRequest, hence
+            // it is added here because it will be needed for caching
+            resourceResponse = new ResourceResponseImpl(resourceRequest,
+                    resourceResponse.getProperties(),
+                    resourceResponse.getResource());
+
+            // TODO - this should be before retrieveResource() but eventPublisher requires a
+            // resourceResponse and that resource response must have a resource request in it (to get
+            // USER property)
+            eventPublisher.postRetrievalStatus(resourceResponse,
+                    ProductRetrievalStatus.STARTED,
+                    metacard,
+                    null,
+                    0L,
+                    downloadIdentifier);
+
+            AtomicBoolean downloadStarted = new AtomicBoolean(Boolean.FALSE);
+            ReliableResourceDownloader downloader = new ReliableResourceDownloader(downloaderConfig,
+                    downloadStarted,
+                    downloadIdentifier,
+                    resourceResponse,
+                    retriever);
+            resourceResponse = downloader.setupDownload(metacard, downloadStatusInfo);
+
+            // Start download in separate thread so can return ResourceResponse with
+            // ReliableResourceInputStream available for client to start reading from
+            executor.submit(downloader);
+
+            // Wait for download to get started before returning control to client
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            while (!downloadStarted.get()) {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                }
+                long elapsedTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+                if (elapsedTime > ONE_SECOND_IN_MS) {
+                    LOGGER.debug("downloadStarted still FALSE - elapsedTime = {}", elapsedTime);
+                    break;
+                }
+            }
+            LOGGER.debug("elapsedTime = {}", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+            stopwatch.stop();
+        }
         return resourceResponse;
     }
 

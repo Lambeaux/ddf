@@ -874,7 +874,7 @@ public class CatalogFrameworkImplTest {
         //        ResourceResponse resourceResponseInCache = new ResourceResponseImpl(mockResource);
         //        when(resourceCache.put(isA(Metacard.class), isA(ResourceResponse.class),
         //             isA(ResourceRetriever.class), isA(Boolean.class))).thenReturn(resourceResponseInCache);
-        resourceFramework.setProductCache(resourceCache);
+//        resourceFramework.setProductCache(resourceCache);
 
         String resourceSiteName = "myId";
 
@@ -2093,7 +2093,7 @@ public class CatalogFrameworkImplTest {
         props.setFederationStrategy(strategy);
         props.setQueryResponsePostProcessor(mock(QueryResponsePostProcessor.class));
         props.setSourcePoller(mockPoller);
-        props.setResourceCache(resourceCache);
+//        props.setResourceCache(resourceCache);
 
         props.setFilterBuilder(new GeotoolsFilterBuilder());
         CatalogFrameworkImpl framework = new CatalogFrameworkImpl(props);
