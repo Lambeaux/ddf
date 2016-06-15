@@ -15,7 +15,6 @@ package ddf.catalog.resource.download;
 
 import java.io.IOException;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -25,12 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Stopwatch;
 
-import ddf.catalog.cache.impl.ResourceCacheImpl;
 import ddf.catalog.cache.impl.CacheKey;
 import ddf.catalog.data.Metacard;
-import ddf.catalog.event.retrievestatus.DownloadStatusInfo;
-import ddf.catalog.event.retrievestatus.DownloadsStatusEventListener;
-import ddf.catalog.event.retrievestatus.DownloadsStatusEventPublisher;
 import ddf.catalog.event.retrievestatus.DownloadsStatusEventPublisher.ProductRetrievalStatus;
 import ddf.catalog.operation.ResourceRequest;
 import ddf.catalog.operation.ResourceResponse;
@@ -51,41 +46,14 @@ public class ReliableResourceDownloadManager {
     private static final Logger LOGGER =
             LoggerFactory.getLogger(ReliableResourceDownloadManager.class);
 
-    private DownloadsStatusEventPublisher eventPublisher;
-
-    private ResourceResponse resourceResponse;
-
-    private String downloadIdentifier;
-
-    private DownloadStatusInfo downloadStatusInfo;
-
-    private ExecutorService executor;
-
-    private ReliableResourceDownloaderConfig downloaderConfig =
-            new ReliableResourceDownloaderConfig();
+    private ReliableResourceDownloaderConfig downloaderConfig;
 
     /**
-     * @param resourceCache
-     *            reference to the @ResourceCacheImpl to cache the resource in
-     * @param eventPublisher
-     *            reference to the publisher of status events as the download progresses
-     * @param eventListener
-     *            reference to the {@link DownloadsStatusEventListener}
-     * @param downloadStatusInfo
-     *            reference to the {@link DownloadStatusInfo}
+     * @param downloaderConfig
+     *            reference to the {@link ReliableResourceDownloaderConfig}
      */
-    public ReliableResourceDownloadManager(ResourceCacheImpl resourceCache,
-            DownloadsStatusEventPublisher eventPublisher,
-            DownloadsStatusEventListener eventListener, DownloadStatusInfo downloadStatusInfo,
-            ExecutorService executor) {
-        this.downloaderConfig.setResourceCache(resourceCache);
-        this.eventPublisher = eventPublisher;
-        this.downloaderConfig.setEventPublisher(this.eventPublisher);
-        this.downloaderConfig.setEventListener(eventListener);
-        this.downloadStatusInfo = downloadStatusInfo;
-        this.executor = executor;
-        this.downloadIdentifier = UUID.randomUUID()
-                .toString();
+    public ReliableResourceDownloadManager(ReliableResourceDownloaderConfig downloaderConfig) {
+        this.downloaderConfig = downloaderConfig;
     }
 
     public void init() {
@@ -93,11 +61,11 @@ public class ReliableResourceDownloadManager {
     }
 
     public void cleanUp() {
-        executor.shutdown();
+        downloaderConfig.shutdown();
         try {
-            executor.awaitTermination(ONE_SECOND_IN_MS, TimeUnit.MILLISECONDS);
+            downloaderConfig.awaitTermination(ONE_SECOND_IN_MS, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
-            executor.shutdownNow();
+            downloaderConfig.shutdownNow();
         }
     }
 
@@ -114,6 +82,10 @@ public class ReliableResourceDownloadManager {
      */
     public ResourceResponse download(ResourceRequest resourceRequest, Metacard metacard,
             ResourceRetriever retriever) throws DownloadException {
+
+        ResourceResponse resourceResponse = null;
+        String downloadIdentifier = UUID.randomUUID()
+                .toString();
 
         if (metacard == null) {
             throw new DownloadException("Cannot download resource if metacard is null");
@@ -157,7 +129,7 @@ public class ReliableResourceDownloadManager {
             // TODO - this should be before retrieveResource() but eventPublisher requires a
             // resourceResponse and that resource response must have a resource request in it (to get
             // USER property)
-            eventPublisher.postRetrievalStatus(resourceResponse,
+            downloaderConfig.getEventPublisher().postRetrievalStatus(resourceResponse,
                     ProductRetrievalStatus.STARTED,
                     metacard,
                     null,
@@ -170,11 +142,11 @@ public class ReliableResourceDownloadManager {
                     downloadIdentifier,
                     resourceResponse,
                     retriever);
-            resourceResponse = downloader.setupDownload(metacard, downloadStatusInfo);
+            resourceResponse = downloader.setupDownload(metacard, downloaderConfig.getDownloadStatusInfo());
 
             // Start download in separate thread so can return ResourceResponse with
             // ReliableResourceInputStream available for client to start reading from
-            executor.submit(downloader);
+            downloaderConfig.submit(downloader);
 
             // Wait for download to get started before returning control to client
             Stopwatch stopwatch = Stopwatch.createStarted();
@@ -219,11 +191,19 @@ public class ReliableResourceDownloadManager {
         downloaderConfig.setCacheWhenCanceled(cacheWhenCanceled);
     }
 
+    public void setDownloaderConfig(ReliableResourceDownloaderConfig downloaderConfig) {
+        this.downloaderConfig = downloaderConfig;
+    }
+
     public void setChunkSize(int chunkSize) {
         downloaderConfig.setChunkSize(chunkSize);
     }
 
     public boolean isCacheEnabled() {
         return downloaderConfig.isCacheEnabled();
+    }
+
+    public void setProductCacheDirectory(String productCacheDirectory) {
+        this.downloaderConfig.getResourceCache().setProductCacheDirectory(productCacheDirectory);
     }
 }

@@ -252,7 +252,6 @@ public class FrameworkProperties {
         this.sourcePoller = sourcePoller;
     }
 
-
     public DownloadsStatusEventPublisher getDownloadsStatusEventPublisher() {
         return downloadsStatusEventPublisher;
     }

@@ -43,6 +43,7 @@ import ddf.catalog.resource.ResourceReader;
 import ddf.catalog.resource.download.DownloadException;
 import ddf.catalog.resource.download.DownloadManagerState;
 import ddf.catalog.resource.download.ReliableResourceDownloadManager;
+import ddf.catalog.resource.download.ReliableResourceDownloaderConfig;
 import ddf.catalog.resource.impl.URLResourceReader;
 import ddf.catalog.resourceretriever.LocalResourceRetriever;
 
@@ -64,6 +65,7 @@ public class DownloadsStatusEventListenerTest {
     @BeforeClass
     public static void setUp() {
 
+        ReliableResourceDownloaderConfig downloaderConfig = new ReliableResourceDownloaderConfig();
         testDownloadStatusInfo = new DownloadStatusInfoImpl();
         hcInstanceFactory = new TestHazelcastInstanceFactory(10);
         ResourceCacheImpl testResourceCache = new ResourceCacheImpl();
@@ -74,11 +76,12 @@ public class DownloadsStatusEventListenerTest {
         DownloadsStatusEventPublisher testEventPublisher =
                 mock(DownloadsStatusEventPublisher.class);
         testEventListener = new DownloadsStatusEventListener();
-        testDownloadManager = new ReliableResourceDownloadManager(testResourceCache,
-                testEventPublisher,
-                testEventListener,
-                testDownloadStatusInfo,
-                Executors.newSingleThreadExecutor());
+        downloaderConfig.setDownloadStatusInfo(testDownloadStatusInfo);
+        downloaderConfig.setResourceCache(testResourceCache);
+        downloaderConfig.setEventPublisher(testEventPublisher);
+        downloaderConfig.setEventListener(testEventListener);
+        downloaderConfig.setExecutor(Executors.newSingleThreadExecutor());
+        testDownloadManager = new ReliableResourceDownloadManager(downloaderConfig);
         testDownloadManager.setMaxRetryAttempts(1);
         testDownloadManager.setDelayBetweenAttempts(0);
         testDownloadManager.setMonitorPeriod(5);
