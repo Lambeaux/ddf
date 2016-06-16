@@ -60,13 +60,13 @@ public class DownloadsStatusEventListenerTest {
 
     private static DownloadsStatusEventListener testEventListener;
 
-    private static DownloadStatusInfoImpl testDownloadStatusInfo;
+    private static DownloadStatusContainerImpl testDownloadStatusInfo;
 
     @BeforeClass
     public static void setUp() {
 
         ReliableResourceDownloaderConfig downloaderConfig = new ReliableResourceDownloaderConfig();
-        testDownloadStatusInfo = new DownloadStatusInfoImpl();
+        testDownloadStatusInfo = new DownloadStatusContainerImpl();
         hcInstanceFactory = new TestHazelcastInstanceFactory(10);
         ResourceCacheImpl testResourceCache = new ResourceCacheImpl();
         testResourceCache.setCache(hcInstanceFactory.newHazelcastInstance());
@@ -76,7 +76,7 @@ public class DownloadsStatusEventListenerTest {
         DownloadsStatusEventPublisher testEventPublisher =
                 mock(DownloadsStatusEventPublisher.class);
         testEventListener = new DownloadsStatusEventListener();
-        downloaderConfig.setDownloadStatusInfo(testDownloadStatusInfo);
+        downloaderConfig.setDownloadStatusContainer(testDownloadStatusInfo);
         downloaderConfig.setResourceCache(testResourceCache);
         downloaderConfig.setEventPublisher(testEventPublisher);
         downloaderConfig.setEventListener(testEventListener);

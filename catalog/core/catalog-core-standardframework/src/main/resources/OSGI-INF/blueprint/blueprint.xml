@@ -297,11 +297,11 @@
         </service-properties>
     </service>
 
-    <bean id="downloadStatusInfo" class="ddf.catalog.event.retrievestatus.DownloadStatusInfoImpl">
+    <bean id="downloadStatusContainer" class="ddf.catalog.event.retrievestatus.DownloadStatusContainerImpl">
         <property name="eventAdmin" ref="eventAdmin"/>
     </bean>
-    <service ref="downloadStatusInfo"
-             interface="ddf.catalog.event.retrievestatus.DownloadStatusInfo"/>
+    <service ref="downloadStatusContainer"
+             interface="ddf.catalog.event.retrievestatus.DownloadStatusContainer"/>
 
     <bean id="deprecatedProductCache" class="ddf.catalog.cache.impl.ResourceCacheImpl"
           init-method="setupCache"
@@ -334,7 +334,7 @@
                 <property name="resourceCache" ref="deprecatedProductCache"/>
                 <property name="eventPublisher" ref="retrieveStatusEventPublisher"/>
                 <property name="eventListener" ref="retrieveStatusEventListener"/>
-                <property name="downloadStatusInfo" ref="downloadStatusInfo"/>
+                <property name="downloadStatusContainer" ref="downloadStatusContainer"/>
                 <property name="executor" ref="downloadThreadPool"/>
             </bean>
         </argument>

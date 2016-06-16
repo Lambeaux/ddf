@@ -63,8 +63,8 @@ import ddf.catalog.cache.impl.CacheKey;
 import ddf.catalog.cache.impl.ResourceCacheImpl;
 import ddf.catalog.data.Metacard;
 import ddf.catalog.data.impl.BasicTypes;
-import ddf.catalog.event.retrievestatus.DownloadStatusInfo;
-import ddf.catalog.event.retrievestatus.DownloadStatusInfoImpl;
+import ddf.catalog.event.retrievestatus.DownloadStatusContainer;
+import ddf.catalog.event.retrievestatus.DownloadStatusContainerImpl;
 import ddf.catalog.event.retrievestatus.DownloadsStatusEventListener;
 import ddf.catalog.event.retrievestatus.DownloadsStatusEventPublisher;
 import ddf.catalog.operation.ResourceRequest;
@@ -131,7 +131,7 @@ public class ReliableResourceDownloadManagerTest {
 
     private Future<ByteArrayOutputStream> future;
 
-    private DownloadStatusInfo downloadStatusInfo;
+    private DownloadStatusContainer downloadStatusContainer;
 
     @BeforeClass
     public static void oneTimeSetup() throws IOException {
@@ -149,7 +149,7 @@ public class ReliableResourceDownloadManagerTest {
         when(resourceCache.getProductCacheDirectory()).thenReturn(productCacheDirectory);
         eventPublisher = mock(DownloadsStatusEventPublisher.class);
         eventListener = mock(DownloadsStatusEventListener.class);
-        downloadStatusInfo = new DownloadStatusInfoImpl();
+        downloadStatusContainer = new DownloadStatusContainerImpl();
 
         downloadMgr = new ReliableResourceDownloadManager(getDownloaderConfig());
 
@@ -905,7 +905,7 @@ public class ReliableResourceDownloadManagerTest {
         downloaderConfig.setResourceCache(resourceCache);
         downloaderConfig.setEventPublisher(eventPublisher);
         downloaderConfig.setEventListener(eventListener);
-        downloaderConfig.setDownloadStatusInfo(downloadStatusInfo);
+        downloaderConfig.setDownloadStatusContainer(downloadStatusContainer);
         downloaderConfig.setExecutor(Executors.newSingleThreadExecutor());
         return downloaderConfig;
     }

@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import ddf.catalog.cache.impl.ResourceCacheImpl;
-import ddf.catalog.event.retrievestatus.DownloadStatusInfo;
+import ddf.catalog.event.retrievestatus.DownloadStatusContainer;
 import ddf.catalog.event.retrievestatus.DownloadsStatusEventListener;
 import ddf.catalog.event.retrievestatus.DownloadsStatusEventPublisher;
 
@@ -47,7 +47,7 @@ public class ReliableResourceDownloaderConfig {
 
     private DownloadsStatusEventListener eventListener;
 
-    private DownloadStatusInfo downloadStatusInfo;
+    private DownloadStatusContainer downloadStatusContainer;
 
     private ExecutorService executor;
 
@@ -133,12 +133,12 @@ public class ReliableResourceDownloaderConfig {
         this.cacheWhenCanceled = cacheWhenCanceled;
     }
 
-    public DownloadStatusInfo getDownloadStatusInfo() {
-        return downloadStatusInfo;
+    public DownloadStatusContainer getDownloadStatusContainer() {
+        return downloadStatusContainer;
     }
 
-    public void setDownloadStatusInfo(DownloadStatusInfo downloadStatusInfo) {
-        this.downloadStatusInfo = downloadStatusInfo;
+    public void setDownloadStatusContainer(DownloadStatusContainer downloadStatusContainer) {
+        this.downloadStatusContainer = downloadStatusContainer;
     }
 
     public void setExecutor(ExecutorService executor) {

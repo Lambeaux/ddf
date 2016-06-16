@@ -14,6 +14,8 @@
 package ddf.catalog.resource.download;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,6 +28,7 @@ import com.google.common.base.Stopwatch;
 
 import ddf.catalog.cache.impl.CacheKey;
 import ddf.catalog.data.Metacard;
+import ddf.catalog.event.retrievestatus.DownloadController;
 import ddf.catalog.event.retrievestatus.DownloadsStatusEventPublisher.ProductRetrievalStatus;
 import ddf.catalog.operation.ResourceRequest;
 import ddf.catalog.operation.ResourceResponse;
@@ -39,7 +42,7 @@ import ddf.catalog.resourceretriever.ResourceRetriever;
  * The manager for downloading a resource, including retrying the download if problems are
  * encountered, and optionally caching the resource as it is streamed to the client.
  */
-public class ReliableResourceDownloadManager {
+public class ReliableResourceDownloadManager implements DownloadController {
 
     static final int ONE_SECOND_IN_MS = 1000;
 
@@ -142,7 +145,7 @@ public class ReliableResourceDownloadManager {
                     downloadIdentifier,
                     resourceResponse,
                     retriever);
-            resourceResponse = downloader.setupDownload(metacard, downloaderConfig.getDownloadStatusInfo());
+            resourceResponse = downloader.setupDownload(metacard, downloaderConfig.getDownloadStatusContainer());
 
             // Start download in separate thread so can return ResourceResponse with
             // ReliableResourceInputStream available for client to start reading from
@@ -165,6 +168,31 @@ public class ReliableResourceDownloadManager {
             stopwatch.stop();
         }
         return resourceResponse;
+    }
+
+    @Override
+    public List<String> getAllDownloads() {
+        return downloaderConfig.getDownloadStatusContainer().getAllDownloads();
+    }
+
+    @Override
+    public List<String> getAllDownloads(String userId) {
+        return downloaderConfig.getDownloadStatusContainer().getAllDownloads(userId);
+    }
+
+    @Override
+    public Map<String, String> getDownloadStatus(String downloadIdentifier) {
+        return downloaderConfig.getDownloadStatusContainer().getDownloadStatus(downloadIdentifier);
+    }
+
+    @Override
+    public void cancelDownload(String userId, String downloadIdentifier) {
+        downloaderConfig.getDownloadStatusContainer().cancelDownload(userId, downloadIdentifier);
+    }
+
+    @Override
+    public void pauseDownload(String userId, String downloadIdentifier) {
+        downloaderConfig.getDownloadStatusContainer().pauseDownload(userId, downloadIdentifier);
     }
 
     public void setMaxRetryAttempts(int maxRetryAttempts) {

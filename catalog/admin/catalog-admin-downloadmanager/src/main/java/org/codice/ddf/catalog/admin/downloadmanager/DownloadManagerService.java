@@ -26,7 +26,7 @@ import javax.management.ObjectName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ddf.catalog.event.retrievestatus.DownloadStatusInfo;
+import ddf.catalog.event.retrievestatus.DownloadStatusContainer;
 
 public class DownloadManagerService implements DownloadManagerServiceMBean {
 
@@ -36,13 +36,13 @@ public class DownloadManagerService implements DownloadManagerServiceMBean {
 
     private MBeanServer mBeanServer;
 
-    private DownloadStatusInfo downloadStatusInfo;
+    private DownloadStatusContainer downloadStatusContainer;
 
-    public DownloadManagerService(DownloadStatusInfo downloadStatusInfo) {
-        this.downloadStatusInfo = downloadStatusInfo;
+    public DownloadManagerService(DownloadStatusContainer downloadStatusContainer) {
+        this.downloadStatusContainer = downloadStatusContainer;
         try {
             objectName = new ObjectName(
-                    DownloadStatusInfo.class.getName() + ":service=download-manager");
+                    DownloadStatusContainer.class.getName() + ":service=download-manager");
             mBeanServer = ManagementFactory.getPlatformMBeanServer();
         } catch (MalformedObjectNameException mone) {
             LOGGER.info("Could not create objectName.", mone);
@@ -75,29 +75,29 @@ public class DownloadManagerService implements DownloadManagerServiceMBean {
 
     public List<Map<String, String>> getAllDownloadsStatus() {
         List<Map<String, String>> allDownloadsStatus = new ArrayList<Map<String, String>>();
-        for (String item : downloadStatusInfo.getAllDownloads()) {
-            allDownloadsStatus.add(downloadStatusInfo.getDownloadStatus(item));
+        for (String item : downloadStatusContainer.getAllDownloads()) {
+            allDownloadsStatus.add(downloadStatusContainer.getDownloadStatus(item));
         }
         return allDownloadsStatus;
     }
 
     public Map<String, String> getDownloadStatus(String downloadIdentifier) {
-        return downloadStatusInfo.getDownloadStatus(downloadIdentifier);
+        return downloadStatusContainer.getDownloadStatus(downloadIdentifier);
     }
 
     public List<String> getAllDownloads() {
-        return downloadStatusInfo.getAllDownloads();
+        return downloadStatusContainer.getAllDownloads();
     }
 
     public List<String> getAllDownloads(String userId) {
-        return downloadStatusInfo.getAllDownloads(userId);
+        return downloadStatusContainer.getAllDownloads(userId);
     }
 
     public void removeDownloadInfo(String downloadIdentifier) {
-        downloadStatusInfo.removeDownloadInfo(downloadIdentifier);
+        downloadStatusContainer.removeDownloadInfo(downloadIdentifier);
     }
 
     public void cancelDownload(String userId, String downloadIdentifier) {
-        downloadStatusInfo.cancelDownload(userId, downloadIdentifier);
+        downloadStatusContainer.cancelDownload(userId, downloadIdentifier);
     }
 }

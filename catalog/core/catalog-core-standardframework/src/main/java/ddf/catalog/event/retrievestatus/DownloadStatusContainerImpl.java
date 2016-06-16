@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.shiro.SecurityUtils;
 import org.codice.ddf.activities.ActivityEvent;
 import org.osgi.service.event.Event;
@@ -29,9 +30,9 @@ import ddf.catalog.operation.ResourceResponse;
 import ddf.catalog.resource.download.ReliableResourceDownloader;
 import ddf.security.SubjectUtils;
 
-public class DownloadStatusInfoImpl implements DownloadStatusInfo {
+public class DownloadStatusContainerImpl implements DownloadStatusContainer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DownloadStatusInfoImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DownloadStatusContainerImpl.class);
 
     private static final String UNKNOWN = "UNKNOWN";
 
@@ -121,6 +122,10 @@ public class DownloadStatusInfoImpl implements DownloadStatusInfo {
 
         Event event = new Event(ActivityEvent.EVENT_TOPIC_DOWNLOAD_CANCEL, propertiesMap);
         eventAdmin.postEvent(event);
+    }
+
+    public void pauseDownload(String userId, String downloadIdentifier) {
+        throw new NotImplementedException();
     }
 
     private String getProperty(ResourceResponse resourceResponse, String property) {

@@ -50,7 +50,7 @@ import ddf.catalog.cache.MockInputStream;
 import ddf.catalog.cache.impl.ResourceCacheImpl;
 import ddf.catalog.data.Metacard;
 import ddf.catalog.data.impl.BasicTypes;
-import ddf.catalog.event.retrievestatus.DownloadStatusInfoImpl;
+import ddf.catalog.event.retrievestatus.DownloadStatusContainerImpl;
 import ddf.catalog.event.retrievestatus.DownloadsStatusEventListener;
 import ddf.catalog.event.retrievestatus.DownloadsStatusEventPublisher;
 import ddf.catalog.event.retrievestatus.DownloadsStatusEventPublisher.ProductRetrievalStatus;
@@ -113,7 +113,7 @@ public class ReliableResourceDownloaderTest {
                 DOWNLOAD_ID,
                 mockResponse,
                 getMockRetriever());
-        downloader.setupDownload(mockMetacard, new DownloadStatusInfoImpl());
+        downloader.setupDownload(mockMetacard, new DownloadStatusContainerImpl());
         downloader.run();
 
         verify(mockPublisher, times(retries)).postRetrievalStatus(any(ResourceResponse.class),
@@ -143,7 +143,7 @@ public class ReliableResourceDownloaderTest {
                 "123",
                 mockResponse,
                 getMockRetriever());
-        downloader.setupDownload(mockMetacard, new DownloadStatusInfoImpl());
+        downloader.setupDownload(mockMetacard, new DownloadStatusContainerImpl());
 
         FileOutputStream mockFos = mock(FileOutputStream.class);
         doThrow(new IOException()).when(mockFos)
@@ -183,7 +183,7 @@ public class ReliableResourceDownloaderTest {
                 "123",
                 mockResponse,
                 getMockRetriever());
-        downloader.setupDownload(mockMetacard, new DownloadStatusInfoImpl());
+        downloader.setupDownload(mockMetacard, new DownloadStatusContainerImpl());
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         CountingOutputStream mockCountingFbos = new CountingOutputStream(baos);

@@ -41,7 +41,7 @@ import com.google.common.io.FileBackedOutputStream;
 import ddf.catalog.cache.impl.CacheKey;
 import ddf.catalog.cache.impl.ResourceCacheImpl;
 import ddf.catalog.data.Metacard;
-import ddf.catalog.event.retrievestatus.DownloadStatusInfo;
+import ddf.catalog.event.retrievestatus.DownloadStatusContainer;
 import ddf.catalog.event.retrievestatus.DownloadsStatusEventListener;
 import ddf.catalog.event.retrievestatus.DownloadsStatusEventPublisher;
 import ddf.catalog.event.retrievestatus.DownloadsStatusEventPublisher.ProductRetrievalStatus;
@@ -135,7 +135,7 @@ public class ReliableResourceDownloader implements Runnable {
     }
 
     public ResourceResponse setupDownload(Metacard metacard,
-            DownloadStatusInfo downloadStatusInfo) {
+            DownloadStatusContainer downloadStatusContainer) {
         Resource resource = resourceResponse.getResource();
         MimeType mimeType = resource.getMimeType();
         String resourceName = resource.getName();
@@ -162,7 +162,7 @@ public class ReliableResourceDownloader implements Runnable {
         resourceInputStream = resource.getInputStream();
 
         eventListener.setDownloadMap(downloadIdentifier, resourceResponse);
-        downloadStatusInfo.addDownloadInfo(downloadIdentifier, this, resourceResponse);
+        downloadStatusContainer.addDownloadInfo(downloadIdentifier, this, resourceResponse);
 
         if (downloaderConfig.isCacheEnabled()) {
 
