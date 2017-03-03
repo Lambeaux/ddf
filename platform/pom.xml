@@ -38,6 +38,7 @@
         <javax.inject.bundle.version>${javax.inject.version}_2</javax.inject.bundle.version>
         <cas.client.bundle.version>${cas.client.version}_1</cas.client.bundle.version>
         <solr.version>6.4.1</solr.version>
+        <ignite.version>1.8.0</ignite.version>
         <commons.fileupload.version>1.3.2</commons.fileupload.version>
         <woodstox.core.version>4.4.1</woodstox.core.version>
     </properties>
@@ -377,5 +378,6 @@
         <module>country-converter</module>
         <module>platform-app</module>
         <module>platform-filter-clientinfo</module>
+        <module>ignite</module>
     </modules>
 </project>
