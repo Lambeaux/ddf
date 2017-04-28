@@ -37,7 +37,10 @@ import javax.xml.datatype.DatatypeFactory;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.lang.StringUtils;
+import org.codice.ddf.catalog.subscriptionstore.internal.SerializedSubscription;
 import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionContainer;
+import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionIdentifier;
+import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionType;
 import org.codice.ddf.platform.util.TransformerProperties;
 import org.codice.ddf.platform.util.XMLUtils;
 import org.codice.ddf.spatial.ogc.csw.catalog.common.CswConstants;
@@ -47,8 +50,6 @@ import org.codice.ddf.spatial.ogc.csw.catalog.common.GetRecordsRequest;
 import org.codice.ddf.spatial.ogc.csw.catalog.common.transformer.TransformerManager;
 import org.codice.ddf.spatial.ogc.csw.catalog.endpoint.event.CswSubscription;
 import org.codice.ddf.spatial.ogc.csw.catalog.endpoint.event.CswSubscriptionFactory;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
@@ -70,7 +71,7 @@ public class CswSubscriptionEndpoint implements CswSubscribe, Subscriber {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CswSubscriptionEndpoint.class);
 
-    private static final String CSW_SUBSCRIPTION_TYPE = "CSW";
+    private static final String CSW_SUBSCRIPTION_TYPE_NAME = "CSW";
 
     private static final String METACARD_SCHEMA = "urn:catalog:metacard";
 
@@ -88,14 +89,14 @@ public class CswSubscriptionEndpoint implements CswSubscribe, Subscriber {
 
     private DatatypeFactory datatypeFactory;
 
-    private final SubscriptionContainer<CswSubscription> subscriptionContainer;
-
     private final CswSubscriptionFactory cswSubscriptionFactory;
+
+    private final SubscriptionContainer<CswSubscription> subscriptionContainer;
 
     public CswSubscriptionEndpoint(EventProcessor eventProcessor,
             TransformerManager mimeTypeTransformerManager,
             TransformerManager schemaTransformerManager, TransformerManager inputTransformerManager,
-            Validator validator, CswQueryFactory queryFactory,
+            Validator validator, CswSubscriptionFactory cswSubscriptionFactory,
             SubscriptionContainer<CswSubscription> subscriptionContainer) {
         this.eventProcessor = eventProcessor;
         this.mimeTypeTransformerManager = mimeTypeTransformerManager;
@@ -109,12 +110,7 @@ public class CswSubscriptionEndpoint implements CswSubscribe, Subscriber {
             LOGGER.debug("Error initializing datatypeFactory", e);
         }
 
-        this.cswSubscriptionFactory = new CswSubscriptionFactory(mimeTypeTransformerManager,
-                queryFactory);
-
-        subscriptionContainer.registerSubscriptionFactory(CSW_SUBSCRIPTION_TYPE,
-                cswSubscriptionFactory);
-
+        this.cswSubscriptionFactory = cswSubscriptionFactory;
         this.subscriptionContainer = subscriptionContainer;
     }
 
@@ -132,12 +128,11 @@ public class CswSubscriptionEndpoint implements CswSubscribe, Subscriber {
     @Produces({MediaType.WILDCARD})
     public Response deleteRecordsSubscription(@PathParam("requestId") String requestId)
             throws CswException {
-        CswSubscription subscription = subscriptionContainer.delete(requestId,
-                CSW_SUBSCRIPTION_TYPE);
-        if (subscription == null) {
+        if (!subscriptionContainer.contains(getIdentifier(requestId))) {
             return Response.status(Response.Status.NOT_FOUND)
                     .build();
         }
+        CswSubscription subscription = subscriptionContainer.delete(getIdentifier(requestId));
         return createAcknowledgment(subscription.getOriginalRequest());
     }
 
@@ -154,7 +149,7 @@ public class CswSubscriptionEndpoint implements CswSubscribe, Subscriber {
     @Path("/{requestId}")
     @Produces({MediaType.WILDCARD})
     public Response getRecordsSubscription(@PathParam("requestId") String requestId) {
-        CswSubscription subscription = subscriptionContainer.get(requestId, CSW_SUBSCRIPTION_TYPE);
+        CswSubscription subscription = subscriptionContainer.get(getIdentifier(requestId));
         if (subscription == null) {
             return Response.status(Response.Status.NOT_FOUND)
                     .build();
@@ -182,7 +177,7 @@ public class CswSubscriptionEndpoint implements CswSubscribe, Subscriber {
     @Produces({MediaType.WILDCARD})
     public Response updateRecordsSubscription(@PathParam("requestId") String requestId,
             GetRecordsType request) throws CswException {
-        if (!subscriptionContainer.contains(requestId, CSW_SUBSCRIPTION_TYPE)) {
+        if (!subscriptionContainer.contains(getIdentifier(requestId))) {
             return Response.status(Response.Status.NOT_FOUND)
                     .build();
         }
@@ -401,12 +396,11 @@ public class CswSubscriptionEndpoint implements CswSubscribe, Subscriber {
         String deliveryMethodUrl = request.getResponseHandler()
                 .get(0);
 
-        String id = subscriptionContainer.insert(subscription,
-                CSW_SUBSCRIPTION_TYPE,
-                serializedRequest,
-                deliveryMethodUrl);
+        SubscriptionIdentifier identifier = subscriptionContainer.insert(subscription,
+                getSerializedSubscription(serializedRequest, deliveryMethodUrl),
+                getCswSubscriptionType());
 
-        request.setRequestId(id);
+        request.setRequestId(identifier.getId());
     }
 
     private void updateSubscription(GetRecordsType request, String id) {
@@ -416,21 +410,47 @@ public class CswSubscriptionEndpoint implements CswSubscribe, Subscriber {
                 .get(0);
 
         subscriptionContainer.update(subscription,
-                CSW_SUBSCRIPTION_TYPE,
-                serializedRequest,
-                deliveryMethodUrl,
-                id);
+                getSerializedSubscription(serializedRequest, deliveryMethodUrl),
+                getIdentifier(id));
 
         request.setRequestId(id);
     }
 
     @Override
     public boolean deleteSubscription(String subscriptionId) {
-        return subscriptionContainer.delete(subscriptionId, CSW_SUBSCRIPTION_TYPE) != null;
+        return subscriptionContainer.delete(getIdentifier(subscriptionId)) != null;
     }
 
-    BundleContext getBundleContext() {
-        return FrameworkUtil.getBundle(CswSubscriptionEndpoint.class)
-                .getBundleContext();
+    private static SerializedSubscription getSerializedSubscription(String filter,
+            String callback) {
+        return new SerializedSubscription() {
+            @Override
+            public String getSerializedFilter() {
+                return filter;
+            }
+
+            @Override
+            public String getCallbackAddress() {
+                return callback;
+            }
+        };
+    }
+
+    private static SubscriptionIdentifier getIdentifier(String id) {
+        return new SubscriptionIdentifier() {
+            @Override
+            public String getId() {
+                return id;
+            }
+
+            @Override
+            public String getType() {
+                return CSW_SUBSCRIPTION_TYPE_NAME;
+            }
+        };
+    }
+
+    private static SubscriptionType getCswSubscriptionType() {
+        return () -> CSW_SUBSCRIPTION_TYPE_NAME;
     }
 }

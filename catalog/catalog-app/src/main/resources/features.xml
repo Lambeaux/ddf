@@ -42,6 +42,9 @@
              description="Catalog Core feature containing the API, third party bundles necessary to run ddf-core.">
         <feature prerequisite="true">catalog-core-api</feature>
         <feature prerequisite="true" version="${cxf.version}">cxf-jaxrs</feature>
+        <bundle dependency="true">
+            mvn:ddf.catalog.core/subscriptionstore-internal-api/${project.version}
+        </bundle>
         <bundle>mvn:ddf.catalog.core/catalog-core-commons/${project.version}</bundle>
         <bundle>mvn:ddf.measure/measure-api/${project.version}</bundle>
         <bundle>mvn:org.codice.thirdparty/picocontainer/1.2_1</bundle>
@@ -56,7 +59,7 @@
         <bundle>mvn:org.codice.thirdparty/lucene-core/3.0.2_1</bundle>
         <bundle>mvn:ddf.catalog.core/ddf-pubsub/${project.version}</bundle>
         <bundle>mvn:ddf.catalog.core/catalog-core-eventcommands/${project.version}</bundle>
-        <bundle>mvn:ddf.catalog.core/catalog-core-subscriptionstore/${project.version}</bundle>
+        <bundle>mvn:ddf.catalog.core/subscriptionstore-impl/${project.version}</bundle>
         <bundle>mvn:ddf.catalog.core/ddf-pubsub-tracker/${project.version}</bundle>
         <bundle>mvn:ddf.catalog.core/catalog-core-urlresourcereader/${project.version}</bundle>
         <bundle>mvn:ddf.catalog.core/filter-proxy/${project.version}</bundle>

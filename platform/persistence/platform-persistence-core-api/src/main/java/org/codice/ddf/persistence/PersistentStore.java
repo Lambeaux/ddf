@@ -29,7 +29,7 @@ public interface PersistentStore {
     String PREFERENCES_TYPE = "preferences";
     String USER_ATTRIBUTE_TYPE = "attributes";
     String SUBSCRIPTION_TYPE = "subscriptions";
-    String SUBSCRIBED_QUERY_TYPE = "subscribed_query";
+    String EVENT_SUBSCRIPTIONS_TYPE = "event_subscriptions";
 
     Set<String> PERSISTENCE_TYPES = new HashSet<String>(Arrays.asList(METACARD_TYPE,
             SAVED_QUERY_TYPE,
@@ -39,7 +39,7 @@ public interface PersistentStore {
             PREFERENCES_TYPE,
             USER_ATTRIBUTE_TYPE,
             SUBSCRIPTION_TYPE,
-            SUBSCRIBED_QUERY_TYPE));
+            EVENT_SUBSCRIPTIONS_TYPE));
 
     /**
      * Adds item of specified type with the specified properties.
@@ -57,7 +57,7 @@ public interface PersistentStore {
      * @return
      * @throws PersistenceException
      */
-    public List<Map<String, Object>> get(String type) throws PersistenceException;
+    public List get(String type) throws PersistenceException;
 
     /**
      * Get items matching the ECQL query criteria.

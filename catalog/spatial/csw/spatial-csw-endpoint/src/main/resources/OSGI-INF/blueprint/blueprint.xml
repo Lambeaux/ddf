@@ -15,8 +15,7 @@
 <blueprint xmlns:jaxrs="http://cxf.apache.org/blueprint/jaxrs"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
-           xsi:schemaLocation="http://cxf.apache.org/blueprint/jaxrs http://cxf.apache.org/schemas/blueprint/jaxrs.xsd"
-           xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0">
+           xsi:schemaLocation="http://cxf.apache.org/blueprint/jaxrs http://cxf.apache.org/schemas/blueprint/jaxrs.xsd">
 
     <bean id="CswResourceComparator"
           class="org.codice.ddf.spatial.ogc.catalog.common.EndpointOperationInfoResourceComparator">
@@ -127,7 +126,7 @@
           class="org.codice.ddf.spatial.ogc.csw.catalog.endpoint.reader.TransactionMessageBodyReader">
         <argument ref="transformProvider"/>
         <argument ref="cswMetacardType"/>
-        <argument ref="attributeRegistry" />
+        <argument ref="attributeRegistry"/>
     </bean>
 
     <reference id="catalogFramework" interface="ddf.catalog.CatalogFramework"/>
@@ -159,7 +158,8 @@
           class="org.codice.ddf.spatial.ogc.csw.catalog.endpoint.Validator">
     </bean>
 
-    <reference id="cswMetacardType" interface="ddf.catalog.data.MetacardType" filter="(name=csw:Record)"/>
+    <reference id="cswMetacardType" interface="ddf.catalog.data.MetacardType"
+               filter="(name=csw:Record)"/>
 
     <bean id="metacardTypes" class="ddf.catalog.util.impl.SortedServiceList"/>
     <reference-list id="metacardTypeList"
@@ -177,13 +177,24 @@
         <property name="attributeRegistry" ref="attributeRegistry"/>
         <property name="schemaToTagsMapping">
             <array value-type="java.lang.String">
-                <value type="java.lang.String">urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0=registry,registry-remote</value>
+                <value type="java.lang.String">
+                    urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0=registry,registry-remote
+                </value>
             </array>
         </property>
     </bean>
 
     <reference id="subscriptionContainer"
                interface="org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionContainer"/>
+
+    <bean id="cswSubscriptionFactory"
+          class="org.codice.ddf.spatial.ogc.csw.catalog.endpoint.event.CswSubscriptionFactory">
+        <argument ref="queryResponseTransformerManager"/>
+        <argument ref="cswFilterFactory"/>
+    </bean>
+
+    <service ref="cswSubscriptionFactory"
+             interface="org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionFactory"/>
 
     <bean id="CswSubscriptionSvc"
           class="org.codice.ddf.spatial.ogc.csw.catalog.endpoint.CswSubscriptionEndpoint">
@@ -192,8 +203,8 @@
         <argument ref="metacardTransformerManager"/>
         <argument ref="inputTransformerManager"/>
         <argument ref="validator"/>
-        <argument ref="cswFilterFactory"/>
-        <argument ref="subscriptionContainer" />
+        <argument ref="cswSubscriptionFactory"/>
+        <argument ref="subscriptionContainer"/>
     </bean>
 
     <service ref="ddf.catalog.endpoint.csw" interface="ddf.catalog.endpoint.CatalogEndpoint"/>

@@ -465,15 +465,10 @@ public class CswSubscriptionEndpointTest {
                     schemaTransformerManager,
                     inputTransformerManager,
                     validator,
-                    queryFactory,
                     // TODO: fix
+                    null,
                     null);
             this.bundleContext = context;
-        }
-
-        @Override
-        BundleContext getBundleContext() {
-            return this.bundleContext;
         }
     }
 

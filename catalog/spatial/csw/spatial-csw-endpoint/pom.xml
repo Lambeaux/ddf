@@ -113,7 +113,7 @@
         </dependency>
         <dependency>
             <groupId>ddf.catalog.core</groupId>
-            <artifactId>catalog-core-subscriptionstore</artifactId>
+            <artifactId>subscriptionstore-internal-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

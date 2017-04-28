@@ -20,13 +20,12 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
-import org.codice.ddf.catalog.subscriptionstore.SubscriptionMetadata;
+import org.codice.ddf.catalog.subscriptionstore.internal.SerializedSubscription;
 import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionFactory;
 import org.codice.ddf.spatial.ogc.csw.catalog.common.CswException;
 import org.codice.ddf.spatial.ogc.csw.catalog.common.transformer.TransformerManager;
 import org.codice.ddf.spatial.ogc.csw.catalog.endpoint.CswQueryFactory;
 
-import ddf.catalog.event.Subscription;
 import ddf.catalog.operation.QueryRequest;
 import net.opengis.cat.csw.v_2_0_2.GetRecordsType;
 import net.opengis.cat.csw.v_2_0_2.ObjectFactory;
@@ -48,8 +47,14 @@ public class CswSubscriptionFactory implements SubscriptionFactory<CswSubscripti
     }
 
     @Override
-    public CswSubscription createSubscription(String originalRequestSerialized) {
-        GetRecordsType originalRequest = regenerateGetRecordsType(originalRequestSerialized);
+    public String getType() {
+        return "CSW";
+    }
+
+    @Override
+    public CswSubscription createSubscription(SerializedSubscription originalRequestSerialized) {
+        String filter = originalRequestSerialized.getSerializedFilter();
+        GetRecordsType originalRequest = regenerateGetRecordsType(filter);
         return createCswSubscription(originalRequest);
     }
 
@@ -82,8 +87,7 @@ public class CswSubscriptionFactory implements SubscriptionFactory<CswSubscripti
         }
 
         if (messageBody == null) {
-            throw new RuntimeException(
-                    "Error writing GetRecordsType to string, result was null. ");
+            throw new RuntimeException("Error writing GetRecordsType to string, result was null. ");
         }
 
         return messageBody;
