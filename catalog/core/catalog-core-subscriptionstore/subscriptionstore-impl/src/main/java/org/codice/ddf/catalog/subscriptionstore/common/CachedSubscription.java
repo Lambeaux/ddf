@@ -175,7 +175,7 @@ public class CachedSubscription {
         registration = null;
     }
 
-    private BundleContext getBundleContext() {
+    BundleContext getBundleContext() {
         return FrameworkUtil.getBundle(CachedSubscription.class)
                 .getBundleContext();
     }
