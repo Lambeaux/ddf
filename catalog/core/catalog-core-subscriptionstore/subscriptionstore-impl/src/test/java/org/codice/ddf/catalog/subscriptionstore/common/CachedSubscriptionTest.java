@@ -17,14 +17,19 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Dictionary;
+
+import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionFactory;
 import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionRegistrationException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.osgi.framework.Bundle;
@@ -36,6 +41,14 @@ import ddf.catalog.event.Subscription;
 
 @RunWith(MockitoJUnitRunner.class)
 public class CachedSubscriptionTest {
+    private static final String TYPE = "type";
+
+    private static final String NOT_TYPE = "not_type";
+
+    private static final String FILTER = "filter";
+
+    private static final String CALLBACK = "http://localhost:1234/test";
+
     private static final String SUBSCRIPTION_ID_OSGI = "subscription-id";
 
     private static final String EVENT_ENDPOINT = "event-endpoint";
@@ -49,6 +62,11 @@ public class CachedSubscriptionTest {
     @Mock
     private Subscription mockSubscription;
 
+    @Mock
+    private SubscriptionFactory mockFactory;
+
+    SubscriptionMetadata metadata;
+
     private CachedSubscription cachedSubscription;
 
     @Before
@@ -59,9 +77,13 @@ public class CachedSubscriptionTest {
         when(mockRef.getBundle()).thenReturn(mockBundle);
         when(mockBundle.getBundleId()).thenReturn(10L);
 
-        SubscriptionMetadata metadata = new SubscriptionMetadata("type",
-                "filter",
-                "http://localhost:1234/test");
+        when(mockBundleContext.registerService(anyString(), anyObject(), anyObject())).thenReturn(
+                mockRegistration);
+
+        when(mockFactory.getType()).thenReturn(TYPE);
+        when(mockFactory.createSubscription(anyObject())).thenReturn(mockSubscription);
+
+        metadata = new SubscriptionMetadata(TYPE, FILTER, CALLBACK);
         cachedSubscription = new CachedSubscription(metadata) {
             BundleContext getBundleContext() {
                 return mockBundleContext;
@@ -76,12 +98,11 @@ public class CachedSubscriptionTest {
 
     @Test
     public void testUnregister() {
-        when(mockBundleContext.registerService(anyString(), anyObject(), anyObject())).thenReturn(
-                mockRegistration);
         cachedSubscription.registerSubscription(mockSubscription);
         cachedSubscription.unregisterSubscription();
         verify(mockRegistration).unregister();
 
+        // Need to ensure the exception happened on the 2nd call to unregister
         boolean registrationWasSetToNull = false;
         try {
             cachedSubscription.unregisterSubscription();
@@ -91,8 +112,47 @@ public class CachedSubscriptionTest {
         assertThat(registrationWasSetToNull, is(true));
     }
 
+    @Test(expected = SubscriptionRegistrationException.class)
+    public void testRegisterSubscriptionThrowsException() {
+        when(mockBundleContext.registerService(anyString(), anyObject(), anyObject())).thenReturn(
+                null);
+        cachedSubscription.registerSubscription(mockSubscription);
+    }
+
     @Test
     public void testRegisterSubscription() {
+        cachedSubscription.registerSubscription(mockSubscription);
+        validateRegistration();
+    }
 
+    @Test(expected = SubscriptionRegistrationException.class)
+    public void testRegisterWithFactoryThrowsException() {
+        when(mockFactory.getType()).thenReturn(NOT_TYPE);
+        cachedSubscription.registerSubscription(mockFactory);
+    }
+
+    @Test(expected = SubscriptionRegistrationException.class)
+    public void testRegisterWithFactoryReturningNull() {
+        when(mockFactory.createSubscription(anyObject())).thenReturn(null);
+        cachedSubscription.registerSubscription(mockFactory);
+    }
+
+    @Test
+    public void testRegisterWithFactory() {
+        cachedSubscription.registerSubscription(mockFactory);
+        validateRegistration();
+    }
+
+    private void validateRegistration() {
+        ArgumentCaptor<Dictionary> argCaptor = ArgumentCaptor.forClass(Dictionary.class);
+        verify(mockBundleContext).registerService(eq(Subscription.class.getName()),
+                eq(mockSubscription),
+                argCaptor.capture());
+        Dictionary<String, String> props = argCaptor.getValue();
+        assertThat(props.size(), is(2));
+        assertThat(metadata.getId(), is(props.get(SUBSCRIPTION_ID_OSGI)));
+        assertThat(metadata.getCallbackAddress(), is(props.get(EVENT_ENDPOINT)));
+        assertThat(cachedSubscription.getSubscription()
+                .get(), is(mockSubscription));
     }
 }

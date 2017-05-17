@@ -119,7 +119,9 @@ public class CachedSubscription {
                 metadata.getCallbackAddress());
 
         Subscription subscription = factory.createSubscription(metadata);
-        notNull(subscription, "Regenerated subscription cannot be null");
+        if (subscription == null) {
+            throw new SubscriptionRegistrationException("Regenerated subscription cannot be null");
+        }
         registerSubscription(subscription);
     }
 
