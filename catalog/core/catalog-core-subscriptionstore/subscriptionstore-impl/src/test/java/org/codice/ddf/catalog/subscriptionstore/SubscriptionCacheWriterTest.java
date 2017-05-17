@@ -20,10 +20,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collection;
 
-import javax.cache.Cache;
 import javax.cache.integration.CacheWriterException;
 
-import org.codice.ddf.catalog.subscriptionstore.common.CachedSubscription;
 import org.codice.ddf.catalog.subscriptionstore.common.SubscriptionMetadata;
 import org.codice.ddf.catalog.subscriptionstore.common.SubscriptionPersistor;
 import org.junit.Before;
@@ -33,8 +31,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import com.google.common.collect.ImmutableList;
-
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SubscriptionCacheWriterTest {
@@ -50,8 +46,8 @@ public class SubscriptionCacheWriterTest {
     @Before
     public void setup() {
         when(mockMetadata.getId()).thenReturn("id");
-        when(mockMetadata.getType()).thenReturn("type");
-        when(mockMetadata.getSerializedFilter()).thenReturn("filter");
+        when(mockMetadata.getTypeName()).thenReturn("type");
+        when(mockMetadata.getFilter()).thenReturn("filter");
         when(mockMetadata.getCallbackAddress()).thenReturn("callback");
         cacheWriter = new SubscriptionCacheWriter(mockPersistor);
     }
@@ -92,32 +88,5 @@ public class SubscriptionCacheWriterTest {
         verify(mockPersistor).delete("key1");
         verify(mockPersistor).delete("key2");
         verifyNoMoreInteractions(mockPersistor);
-    }
-
-    private static class CacheEntryTestImpl implements Cache.Entry<String, CachedSubscription> {
-
-        private final String key;
-
-        private final CachedSubscription subscription;
-
-        public CacheEntryTestImpl(SubscriptionMetadata metadata) {
-            this.key = metadata.getId();
-            this.subscription = new CachedSubscription(metadata);
-        }
-
-        @Override
-        public String getKey() {
-            return key;
-        }
-
-        @Override
-        public CachedSubscription getValue() {
-            return subscription;
-        }
-
-        @Override
-        public Object unwrap(Class aClass) {
-            throw new NotImplementedException();
-        }
     }
 }

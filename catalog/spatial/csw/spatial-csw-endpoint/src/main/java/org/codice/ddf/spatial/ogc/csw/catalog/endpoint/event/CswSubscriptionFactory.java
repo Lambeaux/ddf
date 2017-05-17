@@ -20,7 +20,7 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
-import org.codice.ddf.catalog.subscriptionstore.internal.SerializedSubscription;
+import org.codice.ddf.catalog.subscriptionstore.internal.MarshalledSubscription;
 import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionFactory;
 import org.codice.ddf.spatial.ogc.csw.catalog.common.CswException;
 import org.codice.ddf.spatial.ogc.csw.catalog.common.transformer.TransformerManager;
@@ -47,13 +47,13 @@ public class CswSubscriptionFactory implements SubscriptionFactory<CswSubscripti
     }
 
     @Override
-    public String getType() {
+    public String getTypeName() {
         return "CSW";
     }
 
     @Override
-    public CswSubscription createSubscription(SerializedSubscription originalRequestSerialized) {
-        String filter = originalRequestSerialized.getSerializedFilter();
+    public CswSubscription createSubscription(MarshalledSubscription originalRequestSerialized) {
+        String filter = originalRequestSerialized.getFilter();
         GetRecordsType originalRequest = regenerateGetRecordsType(filter);
         return createCswSubscription(originalRequest);
     }

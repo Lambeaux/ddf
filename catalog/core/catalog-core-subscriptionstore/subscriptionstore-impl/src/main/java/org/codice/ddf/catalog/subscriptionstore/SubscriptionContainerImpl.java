@@ -35,7 +35,7 @@ import javax.cache.spi.CachingProvider;
 import org.cache2k.jcache.provider.JCacheProvider;
 import org.codice.ddf.catalog.subscriptionstore.common.CachedSubscription;
 import org.codice.ddf.catalog.subscriptionstore.common.SubscriptionMetadata;
-import org.codice.ddf.catalog.subscriptionstore.internal.SerializedSubscription;
+import org.codice.ddf.catalog.subscriptionstore.internal.MarshalledSubscription;
 import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionContainer;
 import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionFactory;
 import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionIdentifier;
@@ -73,7 +73,7 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
     public SubscriptionContainerImpl(SubscriptionCacheLoader cacheLoader,
             SubscriptionCacheWriter cacheWriter) {
         this.subscriptionsCache = createCache(cacheLoader, cacheWriter);
-        this.factories = new ConcurrentHashMap<>();
+        this.factories = createFactoryMap();
     }
 
     /**
@@ -101,9 +101,9 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
                 .map(Cache.Entry::getValue)
                 .filter(CachedSubscription::isNotRegistered)
                 .filter(sub -> factories.containsKey(sub.getMetadata()
-                        .getType()))
+                        .getTypeName()))
                 .forEach(sub -> sub.registerSubscription(factories.get(sub.getMetadata()
-                        .getType())));
+                        .getTypeName())));
     }
 
     /**
@@ -129,7 +129,7 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
     public synchronized Subscription get(SubscriptionIdentifier identifier) {
         validateIdentifier(identifier);
         String subscriptionId = identifier.getId();
-        String type = identifier.getType();
+        String type = identifier.getTypeName();
 
         CachedSubscription cachedSubscription = subscriptionsCache.get(subscriptionId);
 
@@ -149,16 +149,16 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
      */
     @Override
     public synchronized SubscriptionIdentifier insert(Subscription subscription,
-            SerializedSubscription serializedSubscription, SubscriptionType type) {
+            MarshalledSubscription marshalledSubscription, SubscriptionType type) {
         validateSubscription(subscription);
-        validateSerialized(serializedSubscription);
+        validateSerialized(marshalledSubscription);
         validateType(type);
 
-        SubscriptionMetadata metadata = new SubscriptionMetadata(type.getType(),
-                serializedSubscription.getSerializedFilter(),
-                serializedSubscription.getCallbackAddress());
+        SubscriptionMetadata metadata = new SubscriptionMetadata(type.getTypeName(),
+                marshalledSubscription.getFilter(),
+                marshalledSubscription.getCallbackAddress());
 
-        CachedSubscription cachedSubscription = new CachedSubscription(metadata);
+        CachedSubscription cachedSubscription = createCachedSubscription(metadata);
         cachedSubscription.registerSubscription(subscription);
 
         try {
@@ -175,15 +175,15 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
      * {@inheritDoc}
      * <p>
      * Updates are performed by a delete first, then an insertion using the same id. The operations
-     * are almost identical to {@link #insert(Subscription, SerializedSubscription, SubscriptionType)}
+     * are almost identical to {@link #insert(Subscription, MarshalledSubscription, SubscriptionType)}
      * and to {@link #delete(SubscriptionIdentifier)} with the exception of preserving the id in the
      * {@link SubscriptionMetadata}.
      */
     @Override
     public synchronized void update(Subscription subscription,
-            SerializedSubscription serializedSubscription, SubscriptionIdentifier identifier) {
+            MarshalledSubscription marshalledSubscription, SubscriptionIdentifier identifier) {
         validateSubscription(subscription);
-        validateSerialized(serializedSubscription);
+        validateSerialized(marshalledSubscription);
         validateContainment(identifier, "update");
         String subscriptionId = identifier.getId();
 
@@ -195,12 +195,12 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
         }
         original.unregisterSubscription();
 
-        SubscriptionMetadata metadata = new SubscriptionMetadata(identifier.getType(),
-                serializedSubscription.getSerializedFilter(),
-                serializedSubscription.getCallbackAddress(),
+        SubscriptionMetadata metadata = new SubscriptionMetadata(identifier.getTypeName(),
+                marshalledSubscription.getFilter(),
+                marshalledSubscription.getCallbackAddress(),
                 subscriptionId);
 
-        CachedSubscription cachedSubscription = new CachedSubscription(metadata);
+        CachedSubscription cachedSubscription = createCachedSubscription(metadata);
         cachedSubscription.registerSubscription(subscription);
 
         try {
@@ -254,18 +254,18 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
             return;
         }
 
-        if (factories.containsKey(factory.getType())) {
+        if (factories.containsKey(factory.getTypeName())) {
             throw new SubscriptionStoreException(
                     "Duplicate factory registered. This is an API client error");
         }
 
-        factories.put(factory.getType(), factory);
-        LOGGER.debug("SubscriptionFactory registered for {}", factory.getType());
+        factories.put(factory.getTypeName(), factory);
+        LOGGER.debug("SubscriptionFactory registered for {}", factory.getTypeName());
 
         StreamSupport.stream(subscriptionsCache.spliterator(), false)
                 .map(Cache.Entry::getValue)
                 .filter(CachedSubscription::isNotRegistered)
-                .filter(sub -> sub.isType(factory.getType()))
+                .filter(sub -> sub.isType(factory.getTypeName()))
                 .forEach(sub -> sub.registerSubscription(factory));
     }
 
@@ -281,13 +281,13 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
             return;
         }
 
-        SubscriptionFactory removedFactory = factories.remove(factory.getType());
+        SubscriptionFactory removedFactory = factories.remove(factory.getTypeName());
         if (removedFactory == null) {
             throw new SubscriptionStoreException(format(
                     "Binding synchronization is wrong. No factory [%s] exists to unbind. ",
-                    factory.getType()));
+                    factory.getTypeName()));
         }
-        LOGGER.debug("SubscriptionFactory removed for {}", factory.getType());
+        LOGGER.debug("SubscriptionFactory removed for {}", factory.getTypeName());
     }
 
     /**
@@ -300,7 +300,7 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
             LOGGER.debug("Target for subscription {} [ {} | {} ] does not exist",
                     operation,
                     identifier.getId(),
-                    identifier.getType());
+                    identifier.getTypeName());
             throw new SubscriptionStoreException(format("Subscription [%s] does not exist. ",
                     identifier.getId()));
         }
@@ -313,19 +313,19 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
     private void validateIdentifier(SubscriptionIdentifier identifier) {
         notNull(identifier, "Subscription identifier cannot be null. ");
         notEmpty(identifier.getId(), "Subscription ID string cannot be null or empty. ");
-        notEmpty(identifier.getType(), "Subscription type string cannot be null or empty. ");
+        notEmpty(identifier.getTypeName(), "Subscription type string cannot be null or empty. ");
     }
 
     private void validateType(SubscriptionType type) {
         notNull(type, "Subscription type cannot be null. ");
-        notEmpty(type.getType(), "Subscription type string cannot be null or empty. ");
+        notEmpty(type.getTypeName(), "Subscription type string cannot be null or empty. ");
     }
 
-    private void validateSerialized(SerializedSubscription serializedSubscription) {
-        notNull(serializedSubscription, "Serialized subscription cannot be null. ");
-        notEmpty(serializedSubscription.getSerializedFilter(),
+    private void validateSerialized(MarshalledSubscription marshalledSubscription) {
+        notNull(marshalledSubscription, "Serialized subscription cannot be null. ");
+        notEmpty(marshalledSubscription.getFilter(),
                 "Serialized filter string cannot be null or empty. ");
-        notEmpty(serializedSubscription.getCallbackAddress(),
+        notEmpty(marshalledSubscription.getCallbackAddress(),
                 "Callback address cannot be null or empty. ");
     }
 
@@ -333,7 +333,7 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
      * Configuration for the javax.cache (For now, Cache2K is used).
      */
     @SuppressWarnings("unchecked")
-    private Cache<String, CachedSubscription> createCache(SubscriptionCacheLoader cacheLoader,
+    Cache<String, CachedSubscription> createCache(SubscriptionCacheLoader cacheLoader,
             SubscriptionCacheWriter cacheWriter) {
         CachingProvider cachingProvider =
                 Caching.getCachingProvider(JCacheProvider.class.getClassLoader());
@@ -348,6 +348,20 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
                         .setWriteThrough(true);
 
         return cacheManager.createCache(SUBSCRIPTION_CACHE_NAME, config);
+    }
+
+    /**
+     * Factory method for creating the factory map.
+     */
+    Map<String, SubscriptionFactory> createFactoryMap() {
+        return new ConcurrentHashMap<>();
+    }
+
+    /**
+     * Factory method for creating cached subscriptions.
+     */
+    CachedSubscription createCachedSubscription(SubscriptionMetadata metadata) {
+        return new CachedSubscription(metadata);
     }
 
     /**

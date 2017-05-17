@@ -88,7 +88,7 @@ public class CachedSubscription {
     }
 
     public boolean isType(String type) {
-        return type.equals(metadata.getType());
+        return type.equals(metadata.getTypeName());
     }
 
     public boolean isNotType(String type) {
@@ -107,15 +107,15 @@ public class CachedSubscription {
      * @throws SubscriptionRegistrationException if the factory can't operate on this cached subscription.
      */
     public void registerSubscription(SubscriptionFactory factory) {
-        if (isNotType(factory.getType())) {
+        if (isNotType(factory.getTypeName())) {
             throw new SubscriptionRegistrationException(format(
                     "Factory type mismatch for subscription type [%s]",
-                    metadata.getType()));
+                    metadata.getTypeName()));
         }
 
         LOGGER.debug("Regenerating subscription [ {} | {} | {} ]",
                 metadata.getId(),
-                metadata.getType(),
+                metadata.getTypeName(),
                 metadata.getCallbackAddress());
 
         Subscription subscription = factory.createSubscription(metadata);
@@ -145,7 +145,7 @@ public class CachedSubscription {
         if (registration != null) {
             LOGGER.debug("Subscription [ {} | {} | {} ] registered with bundle ID = {} ",
                     metadata.getId(),
-                    metadata.getType(),
+                    metadata.getTypeName(),
                     metadata.getCallbackAddress(),
                     registration.getReference()
                             .getBundle()
@@ -155,7 +155,7 @@ public class CachedSubscription {
             throw new SubscriptionRegistrationException(format(
                     "Subscription registration attempt for id [%s] of type [%s] was null",
                     metadata.getId(),
-                    metadata.getType()));
+                    metadata.getTypeName()));
         }
     }
 
@@ -177,7 +177,7 @@ public class CachedSubscription {
         registration = null;
     }
 
-    BundleContext getBundleContext() {
+    protected BundleContext getBundleContext() {
         return FrameworkUtil.getBundle(CachedSubscription.class)
                 .getBundleContext();
     }

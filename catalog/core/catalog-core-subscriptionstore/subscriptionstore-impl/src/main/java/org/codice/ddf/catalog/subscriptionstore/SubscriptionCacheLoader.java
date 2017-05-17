@@ -17,20 +17,19 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.cache.Cache;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheLoaderException;
 
-import org.codice.ddf.catalog.subscriptionstore.common.SubscriptionPersistor;
 import org.codice.ddf.catalog.subscriptionstore.common.CachedSubscription;
 import org.codice.ddf.catalog.subscriptionstore.common.SubscriptionMetadata;
+import org.codice.ddf.catalog.subscriptionstore.common.SubscriptionPersistor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link CacheLoader} implementation for the {@link Cache} in {@link SubscriptionContainerImpl}. All
- * inner exceptions will be handled by the cache implementation, or rethrown as a
- * {@link javax.cache.CacheException}.
+ * {@link CacheLoader} implementation for the {@link javax.cache.Cache} in
+ * {@link SubscriptionContainerImpl}. All inner exceptions will be handled by the cache
+ * implementation, or rethrown as a {@link javax.cache.CacheException}.
  */
 public class SubscriptionCacheLoader implements CacheLoader<String, CachedSubscription> {
     private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionCacheLoader.class);

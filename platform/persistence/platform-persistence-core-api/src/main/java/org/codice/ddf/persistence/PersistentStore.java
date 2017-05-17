@@ -57,7 +57,7 @@ public interface PersistentStore {
      * @return
      * @throws PersistenceException
      */
-    public List get(String type) throws PersistenceException;
+    public List<Map<String, Object>> get(String type) throws PersistenceException;
 
     /**
      * Get items matching the ECQL query criteria.

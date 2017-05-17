@@ -104,8 +104,8 @@ public class SubscriptionCacheLoaderTest {
             String filter, String callback, String id) {
         notNull(metadata);
         assertThat(metadata.getId(), is(id));
-        assertThat(metadata.getType(), is(type));
-        assertThat(metadata.getSerializedFilter(), is(filter));
+        assertThat(metadata.getTypeName(), is(type));
+        assertThat(metadata.getFilter(), is(filter));
         assertThat(metadata.getCallbackAddress(), is(callback));
     }
 

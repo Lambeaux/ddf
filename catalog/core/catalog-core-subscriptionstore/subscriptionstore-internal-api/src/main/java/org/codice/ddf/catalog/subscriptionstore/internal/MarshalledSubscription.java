@@ -21,20 +21,20 @@ package org.codice.ddf.catalog.subscriptionstore.internal;
  * <i>This code is experimental. While this interface is functional and tested, it may change or be
  * removed in a future version of the library.</i>
  */
-public interface SerializedSubscription {
+public interface MarshalledSubscription {
 
     /**
-     * Get the subscription filter as a serialized string. This can be JSON, XML with any schema, etc.
+     * Get the subscription filter as a marshalled string. This can be JSON, XML with any schema, etc.
      * No guarantees are made to the format of this String, only that providing it to the correct
      * {@link SubscriptionFactory} will yield a valid instance of {@code Subscription}.
      *
-     * @return the serialized subscription filter.
+     * @return the marshalled subscription filter.
      */
-    String getSerializedFilter();
+    String getFilter();
 
     /**
      * Get the subscription callback address. While current endpoints conform to using a {@link java.net.URL}
-     * for their {@link ddf.catalog.event.DeliveryMethod}, this is not a guarantee.
+     * for their {@link ddf.catalog.event.DeliveryMethod}, this is <b>not</b> a guarantee.
      *
      * @return the callback address to send events to for this {@code Subscription}.
      */

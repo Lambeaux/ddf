@@ -35,8 +35,8 @@ public interface SubscriptionFactory<S extends Subscription> extends Subscriptio
     /**
      * Revive a subscription from its serialized form.
      *
-     * @param serializedSubscription the subscription data to deserialize.
+     * @param marshalledSubscription the subscription data to deserialize.
      * @return a valid instance of {@link S}.
      */
-    S createSubscription(SerializedSubscription serializedSubscription);
+    S createSubscription(MarshalledSubscription marshalledSubscription);
 }

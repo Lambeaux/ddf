@@ -37,7 +37,7 @@ import javax.xml.datatype.DatatypeFactory;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.lang.StringUtils;
-import org.codice.ddf.catalog.subscriptionstore.internal.SerializedSubscription;
+import org.codice.ddf.catalog.subscriptionstore.internal.MarshalledSubscription;
 import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionContainer;
 import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionIdentifier;
 import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionType;
@@ -421,11 +421,11 @@ public class CswSubscriptionEndpoint implements CswSubscribe, Subscriber {
         return subscriptionContainer.delete(getIdentifier(subscriptionId)) != null;
     }
 
-    private static SerializedSubscription getSerializedSubscription(String filter,
+    private static MarshalledSubscription getSerializedSubscription(String filter,
             String callback) {
-        return new SerializedSubscription() {
+        return new MarshalledSubscription() {
             @Override
-            public String getSerializedFilter() {
+            public String getFilter() {
                 return filter;
             }
 
@@ -444,7 +444,7 @@ public class CswSubscriptionEndpoint implements CswSubscribe, Subscriber {
             }
 
             @Override
-            public String getType() {
+            public String getTypeName() {
                 return CSW_SUBSCRIPTION_TYPE_NAME;
             }
         };

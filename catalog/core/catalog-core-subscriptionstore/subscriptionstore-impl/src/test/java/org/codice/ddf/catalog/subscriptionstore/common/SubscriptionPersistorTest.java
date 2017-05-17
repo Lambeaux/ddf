@@ -138,14 +138,14 @@ public class SubscriptionPersistorTest {
                 metadata.getId()
                         .equals(resultMetadata.getId()));
         assertThat("Metadata types should match. ",
-                metadata.getType()
-                        .equals(resultMetadata.getType()));
+                metadata.getTypeName()
+                        .equals(resultMetadata.getTypeName()));
         assertThat("Metadata callbacks should match. ",
                 metadata.getCallbackAddress()
                         .equals(resultMetadata.getCallbackAddress()));
         assertThat("Metadata filters should match. ",
-                metadata.getSerializedFilter()
-                        .equals(resultMetadata.getSerializedFilter()));
+                metadata.getFilter()
+                        .equals(resultMetadata.getFilter()));
     }
 
     /**

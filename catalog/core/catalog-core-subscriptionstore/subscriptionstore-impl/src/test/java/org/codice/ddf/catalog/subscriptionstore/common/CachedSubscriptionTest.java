@@ -80,12 +80,12 @@ public class CachedSubscriptionTest {
         when(mockBundleContext.registerService(anyString(), anyObject(), anyObject())).thenReturn(
                 mockRegistration);
 
-        when(mockFactory.getType()).thenReturn(TYPE);
+        when(mockFactory.getTypeName()).thenReturn(TYPE);
         when(mockFactory.createSubscription(anyObject())).thenReturn(mockSubscription);
 
         metadata = new SubscriptionMetadata(TYPE, FILTER, CALLBACK);
         cachedSubscription = new CachedSubscription(metadata) {
-            BundleContext getBundleContext() {
+            protected BundleContext getBundleContext() {
                 return mockBundleContext;
             }
         };
@@ -127,7 +127,7 @@ public class CachedSubscriptionTest {
 
     @Test(expected = SubscriptionRegistrationException.class)
     public void testRegisterWithFactoryThrowsException() {
-        when(mockFactory.getType()).thenReturn(NOT_TYPE);
+        when(mockFactory.getTypeName()).thenReturn(NOT_TYPE);
         cachedSubscription.registerSubscription(mockFactory);
     }
 

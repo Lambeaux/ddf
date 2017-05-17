@@ -19,8 +19,8 @@ import javax.cache.Cache;
 import javax.cache.integration.CacheWriter;
 import javax.cache.integration.CacheWriterException;
 
-import org.codice.ddf.catalog.subscriptionstore.common.SubscriptionPersistor;
 import org.codice.ddf.catalog.subscriptionstore.common.CachedSubscription;
+import org.codice.ddf.catalog.subscriptionstore.common.SubscriptionPersistor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

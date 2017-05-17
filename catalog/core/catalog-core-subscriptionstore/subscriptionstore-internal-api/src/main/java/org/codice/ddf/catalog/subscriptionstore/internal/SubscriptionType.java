@@ -16,7 +16,7 @@ package org.codice.ddf.catalog.subscriptionstore.internal;
 /**
  * Uniquely identifies a consumer of subscription services. There should be a 1-to-1 correspondence
  * between a type and a consumer's {@link SubscriptionFactory} that gets registered with OSGi. Consumers
- * must ensure the value for {@link SubscriptionType#getType()} is always:
+ * must ensure the value for {@link SubscriptionType#getTypeName()} is always:
  * <ol>
  * <li>Unique across all API consumers</li>
  * <li>Consistent across all {@link SubscriptionType}s, including {@link SubscriptionIdentifier}
@@ -36,5 +36,5 @@ public interface SubscriptionType {
      *
      * @return the type identifier.
      */
-    String getType();
+    String getTypeName();
 }

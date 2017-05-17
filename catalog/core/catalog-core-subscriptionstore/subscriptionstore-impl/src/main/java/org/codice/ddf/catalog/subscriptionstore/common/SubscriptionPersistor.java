@@ -29,14 +29,13 @@ import org.codice.ddf.persistence.PersistentStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ddf.catalog.event.Subscription;
-
 /**
  * A common persistence layer for all subscriptions targeting the {@link PersistentStore}.
  * <p>
- * The {@link SubscriptionPersistor} serves as the data-access object for all {@link Subscription}s across
- * any endpoint. The object that actually gets stored is a {@link SubscriptionMetadata}, but combined
- * with a {@link org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionFactory}, the
+ * The {@link SubscriptionPersistor} serves as the data-access object for all
+ * {@link ddf.catalog.event.Subscription}s across any endpoint. The object that actually gets stored
+ * is a {@link SubscriptionMetadata}, but combined with a
+ * {@link org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionFactory}, the
  * original {@code Subscription} object can be re-created and registered with the OSGi framework.
  * <p>
  * {@code SubscriptionPersistor} knows how to marshall and unmarshall between {@code SubscriptionMetadata}
@@ -127,12 +126,9 @@ public class SubscriptionPersistor {
 
         PersistentItem persistentItem = new PersistentItem();
         persistentItem.addProperty(SUBSCRIPTION_ID_SOLR, metadata.getId());
-        persistentItem.addProperty(SUBSCRIPTION_TYPE, metadata.getType());
-        persistentItem.addProperty(SUBSCRIPTION_SERIALIZED_FILTER,
-                metadata.getSerializedFilter());
-        persistentItem.addProperty(SUBSCRIPTION_CALLBACK_URL,
-                metadata.getCallbackAddress()
-                        .toString());
+        persistentItem.addProperty(SUBSCRIPTION_TYPE, metadata.getTypeName());
+        persistentItem.addProperty(SUBSCRIPTION_SERIALIZED_FILTER, metadata.getFilter());
+        persistentItem.addProperty(SUBSCRIPTION_CALLBACK_URL, metadata.getCallbackAddress());
 
         return persistentItem;
     }

@@ -13,63 +13,53 @@
  */
 package org.codice.ddf.catalog.subscriptionstore.common;
 
-import static java.lang.String.format;
-import static org.apache.commons.lang.Validate.notEmpty;
-
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
 import java.util.UUID;
 
-import org.codice.ddf.catalog.subscriptionstore.internal.SerializedSubscription;
+import org.codice.ddf.catalog.subscriptionstore.internal.MarshalledSubscription;
 import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ddf.catalog.event.Subscription;
-
 /**
  * An immutable data object for storing subscriptions in the {@link org.codice.ddf.persistence.PersistentStore}.
  * <p>
- * {@link SubscriptionMetadata} wraps a serialized {@link Subscription} with no assumption as to the specific
- * serialization format, only the guarantee that metadata objects with the same <i>type</i> are the same format.
- * That means metadata objects with the same <i>type</i> can be serialized and deserialized the same way, using
- * the same instance of {@link org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionFactory}.
+ * {@link SubscriptionMetadata} wraps a serialized {@link ddf.catalog.event.Subscription} with no
+ * assumption as to the specific serialization format, only the guarantee that metadata objects
+ * with the same <i>type</i> are the same format. That means metadata objects with the same <i>type</i>
+ * can be serialized and deserialized the same way, using the same instance of
+ * {@link org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionFactory}.
  */
-public class SubscriptionMetadata implements SubscriptionIdentifier, SerializedSubscription {
+public class SubscriptionMetadata implements SubscriptionIdentifier, MarshalledSubscription {
     private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionMetadata.class);
 
     private static final String URN_UUID = "urn:uuid:";
 
     private final String id;
 
-    private final String type;
+    private final String typeName;
 
-    private final String serializedFilter;
+    private final String filter;
 
-    private final URL callbackUrl;
+    private final String callbackAddress;
 
-    public SubscriptionMetadata(String type, String serializedFilter, String callbackUrl) {
-        this(type,
-                serializedFilter,
-                callbackUrl,
+    public SubscriptionMetadata(String typeName, String filter, String callbackAddress) {
+        this(typeName,
+                filter,
+                callbackAddress,
                 URN_UUID + UUID.randomUUID()
                         .toString());
     }
 
-    public SubscriptionMetadata(String type, String serializedFilter, String callbackUrl,
-            String id) {
-        notEmpty(type, "type cannot be null or empty");
-        notEmpty(serializedFilter, "serializedFilter cannot be null or empty");
-        notEmpty(callbackUrl, "callbackUrl cannot be null or empty");
-        notEmpty(id, "id cannot be null or empty");
-
-        this.type = type;
-        this.serializedFilter = serializedFilter;
-        this.callbackUrl = validateCallbackUrl(callbackUrl);
+    public SubscriptionMetadata(String typeName, String filter, String callbackAddress, String id) {
+        this.typeName = typeName;
+        this.filter = filter;
+        this.callbackAddress = callbackAddress;
         this.id = id;
 
-        LOGGER.debug("Created subscription metadata object: {} | {} | {}", id, type, callbackUrl);
+        LOGGER.debug("Created subscription metadata object: {} | {} | {}",
+                id,
+                typeName,
+                callbackAddress);
     }
 
     @Override
@@ -78,30 +68,17 @@ public class SubscriptionMetadata implements SubscriptionIdentifier, SerializedS
     }
 
     @Override
-    public String getType() {
-        return type;
+    public String getTypeName() {
+        return typeName;
     }
 
     @Override
-    public String getSerializedFilter() {
-        return serializedFilter;
+    public String getFilter() {
+        return filter;
     }
 
     @Override
     public String getCallbackAddress() {
-        return callbackUrl.toString();
-    }
-
-    private URL validateCallbackUrl(String callbackUrl) {
-        URL url;
-        try {
-            url = URI.create(callbackUrl)
-                    .toURL();
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException(format(
-                    "Invalid subscription request: callback URL [%s] was malformed",
-                    callbackUrl));
-        }
-        return url;
+        return callbackAddress;
     }
 }

@@ -44,12 +44,12 @@ public interface SubscriptionContainer<S extends Subscription> {
      * Add a new subscription to the central store.
      *
      * @param subscription           the subscription object to be registered.
-     * @param serializedSubscription the serialized version of the subscription object.
+     * @param marshalledSubscription the serialized version of the subscription object.
      * @param type                   the new subscription's type.
      * @return the unique identity of the newly created subscription.
      * @throws SubscriptionStoreException if there is a problem adding the subscription.
      */
-    SubscriptionIdentifier insert(S subscription, SerializedSubscription serializedSubscription,
+    SubscriptionIdentifier insert(S subscription, MarshalledSubscription marshalledSubscription,
             SubscriptionType type);
 
     /**
@@ -57,13 +57,13 @@ public interface SubscriptionContainer<S extends Subscription> {
      * identification data.
      *
      * @param subscription           the new subscription object to be registered. The old one will be lost.
-     * @param serializedSubscription the serialized components of the new subscription.
+     * @param marshalledSubscription the serialized components of the new subscription.
      * @param identifier             the unique identity of the subscription to update, which must exist in the
      *                               backing store.
      * @throws SubscriptionStoreException if there is a problem updating, or the identifier points to a
      *                                    subscription that does not exist.
      */
-    void update(S subscription, SerializedSubscription serializedSubscription,
+    void update(S subscription, MarshalledSubscription marshalledSubscription,
             SubscriptionIdentifier identifier);
 
     /**
