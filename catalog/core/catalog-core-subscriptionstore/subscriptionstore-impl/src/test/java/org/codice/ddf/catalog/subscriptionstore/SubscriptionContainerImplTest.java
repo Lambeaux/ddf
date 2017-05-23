@@ -44,10 +44,8 @@ import org.codice.ddf.catalog.subscriptionstore.internal.MarshalledSubscription;
 import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionFactory;
 import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionIdentifier;
 import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionStoreException;
-import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionType;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Answers;
@@ -63,13 +61,19 @@ import ddf.catalog.event.Subscription;
 @RunWith(MockitoJUnitRunner.class)
 public class SubscriptionContainerImplTest {
 
+    private static final String SOME_ID = "id";
+
+    private static final String SOME_TYPE = "type";
+
+    private static final String SOME_FILTER = "filter";
+
+    private static final String SOME_CALLBACK = "http://localhost8993/test";
+
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private static BundleContext mockBundleContext;
 
     @Mock
     private static Cache<String, CachedSubscription> mockCache;
-
-    private static Map<String, SubscriptionFactory> factories = new HashMap<>();
 
     @Mock
     private static SubscriptionFactory mockFactoryA;
@@ -77,10 +81,26 @@ public class SubscriptionContainerImplTest {
     @Mock
     private static SubscriptionFactory mockFactoryB;
 
+    @Mock
+    private Subscription mockArgSubscription;
+
+    @Mock
+    private SubscriptionIdentifier mockArgIdentifier;
+
+    @Mock
+    private MarshalledSubscription mockArgMarshalled;
+
+    private static Map<String, SubscriptionFactory> factories = new HashMap<>();
+
     private SubscriptionContainerImpl container;
 
     @Before
     public void setup() {
+        when(mockArgIdentifier.getId()).thenReturn(SOME_ID);
+        when(mockArgIdentifier.getTypeName()).thenReturn(SOME_TYPE);
+        when(mockArgMarshalled.getFilter()).thenReturn(SOME_FILTER);
+        when(mockArgMarshalled.getCallbackAddress()).thenReturn(SOME_CALLBACK);
+
         when(mockFactoryA.getTypeName()).thenReturn("A");
         when(mockFactoryB.getTypeName()).thenReturn("B");
 
@@ -185,40 +205,47 @@ public class SubscriptionContainerImplTest {
         container.unbindFactory(factory);
     }
 
+    @Test
+    public void testContainsTrue() {
+        CachedSubscription cachedSub = mock(CachedSubscription.class);
+        when(cachedSub.isNotType(SOME_TYPE)).thenReturn(false);
+        when(cachedSub.isNotRegistered()).thenReturn(false);
+        when(cachedSub.getSubscription()).thenReturn(Optional.of(mockArgSubscription));
+
+        when(mockCache.get(SOME_ID)).thenReturn(cachedSub);
+        assertThat(container.contains(mockArgIdentifier), is(true));
+    }
+
+    @Test
+    public void testContainsFalse() {
+        when(mockCache.get(SOME_ID)).thenReturn(null);
+        assertThat(container.contains(mockArgIdentifier), is(false));
+    }
+
     //endregion
 
     //region GET
 
     @Test
     public void testGetSubscription() {
-        SubscriptionIdentifier identifier = mock(SubscriptionIdentifier.class);
-        Subscription subscription = mock(Subscription.class);
-        when(identifier.getId()).thenReturn("id");
-        when(identifier.getTypeName()).thenReturn("type");
-
         CachedSubscription cachedSub = mock(CachedSubscription.class);
-        when(cachedSub.isNotType("type")).thenReturn(false);
+        when(cachedSub.isNotType(SOME_TYPE)).thenReturn(false);
         when(cachedSub.isNotRegistered()).thenReturn(false);
-        when(cachedSub.getSubscription()).thenReturn(Optional.of(subscription));
+        when(cachedSub.getSubscription()).thenReturn(Optional.of(mockArgSubscription));
 
-        when(mockCache.get("id")).thenReturn(cachedSub);
-        assertThat(container.get(identifier), is(subscription));
+        when(mockCache.get(SOME_ID)).thenReturn(cachedSub);
+        assertThat(container.get(mockArgIdentifier), is(mockArgSubscription));
     }
 
     @Test(expected = SubscriptionStoreException.class)
     public void testGetSubscriptionWhenOptionalIsEmpty() {
-        SubscriptionIdentifier identifier = mock(SubscriptionIdentifier.class);
-        Subscription subscription = mock(Subscription.class);
-        when(identifier.getId()).thenReturn("id");
-        when(identifier.getTypeName()).thenReturn("type");
-
         CachedSubscription cachedSub = mock(CachedSubscription.class);
-        when(cachedSub.isNotType("type")).thenReturn(false);
+        when(cachedSub.isNotType(SOME_TYPE)).thenReturn(false);
         when(cachedSub.isNotRegistered()).thenReturn(false);
         when(cachedSub.getSubscription()).thenReturn(Optional.empty());
 
-        when(mockCache.get("id")).thenReturn(cachedSub);
-        container.get(identifier);
+        when(mockCache.get(SOME_ID)).thenReturn(cachedSub);
+        container.get(mockArgIdentifier);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -228,39 +255,27 @@ public class SubscriptionContainerImplTest {
 
     @Test
     public void testGetNullSubscription() {
-        SubscriptionIdentifier identifier = mock(SubscriptionIdentifier.class);
-        when(identifier.getId()).thenReturn("id");
-        when(identifier.getTypeName()).thenReturn("type");
-
-        when(mockCache.get("id")).thenReturn(null);
-        assertThat(container.get(identifier), is(nullValue()));
+        when(mockCache.get(SOME_ID)).thenReturn(null);
+        assertThat(container.get(mockArgIdentifier), is(nullValue()));
     }
 
     @Test
     public void testGetWrongTypeOfSubscription() {
-        SubscriptionIdentifier identifier = mock(SubscriptionIdentifier.class);
-        when(identifier.getId()).thenReturn("id");
-        when(identifier.getTypeName()).thenReturn("type");
-
         CachedSubscription sub = mock(CachedSubscription.class);
-        when(sub.isNotType("type")).thenReturn(true);
+        when(sub.isNotType(SOME_TYPE)).thenReturn(true);
 
-        when(mockCache.get("id")).thenReturn(sub);
-        assertThat(container.get(identifier), is(nullValue()));
+        when(mockCache.get(SOME_ID)).thenReturn(sub);
+        assertThat(container.get(mockArgIdentifier), is(nullValue()));
     }
 
     @Test
     public void testGetUnregisteredSubscription() {
-        SubscriptionIdentifier identifier = mock(SubscriptionIdentifier.class);
-        when(identifier.getId()).thenReturn("id");
-        when(identifier.getTypeName()).thenReturn("type");
-
         CachedSubscription sub = mock(CachedSubscription.class);
-        when(sub.isNotType("type")).thenReturn(false);
+        when(sub.isNotType(SOME_TYPE)).thenReturn(false);
         when(sub.isNotRegistered()).thenReturn(true);
 
-        when(mockCache.get("id")).thenReturn(sub);
-        assertThat(container.get(identifier), is(nullValue()));
+        when(mockCache.get(SOME_ID)).thenReturn(sub);
+        assertThat(container.get(mockArgIdentifier), is(nullValue()));
     }
 
     //endregion
@@ -269,25 +284,24 @@ public class SubscriptionContainerImplTest {
 
     @Test
     public void testInsertSubscription() {
-        Subscription subscription = mock(Subscription.class);
-        MarshalledSubscription marshalledSubscription = mock(MarshalledSubscription.class);
-        SubscriptionType type = mock(SubscriptionType.class);
-
-        when(marshalledSubscription.getFilter()).thenReturn("filter");
-        when(marshalledSubscription.getCallbackAddress()).thenReturn("http://localhost8993/test");
-        when(type.getTypeName()).thenReturn("type");
-
-        container.insert(subscription, marshalledSubscription, type);
+        container.insert(mockArgSubscription, mockArgMarshalled, mockArgIdentifier);
 
         ArgumentCaptor<CachedSubscription> argCaptor =
                 ArgumentCaptor.forClass(CachedSubscription.class);
         verify(mockCache).put(anyString(), argCaptor.capture());
 
         CachedSubscription arg = argCaptor.getValue();
+        SubscriptionMetadata metadata = arg.getMetadata();
+
+        assertThat(metadata.getTypeName(), is(SOME_TYPE));
+        assertThat(metadata.getFilter(), is(SOME_FILTER));
+        assertThat(metadata.getCallbackAddress(), is(SOME_CALLBACK));
+
         if (arg.getSubscription()
                 .isPresent()) {
+            assertThat(arg.isNotRegistered(), is(false));
             assertThat(arg.getSubscription()
-                    .get(), is(subscription));
+                    .get(), is(mockArgSubscription));
         } else {
             fail("Subscription was null on the cache object. ");
         }
@@ -295,39 +309,31 @@ public class SubscriptionContainerImplTest {
 
     @Test(expected = SubscriptionStoreException.class)
     public void testInsertWhenPersistorThrowsException() {
-        Subscription subscription = mock(Subscription.class);
-        MarshalledSubscription marshalledSubscription = mock(MarshalledSubscription.class);
-        SubscriptionType type = mock(SubscriptionType.class);
-
         doThrow(CacheException.class).when(mockCache)
                 .put(anyString(), any(CachedSubscription.class));
+        container.insert(mockArgSubscription, mockArgMarshalled, mockArgIdentifier);
 
-        when(marshalledSubscription.getFilter()).thenReturn("filter");
-        when(marshalledSubscription.getCallbackAddress()).thenReturn("http://localhost8993/test");
-        when(type.getTypeName()).thenReturn("type");
+        ArgumentCaptor<CachedSubscription> argCaptor =
+                ArgumentCaptor.forClass(CachedSubscription.class);
+        verify(mockCache).put(anyString(), argCaptor.capture());
 
-        container.insert(subscription, marshalledSubscription, type);
+        CachedSubscription arg = argCaptor.getValue();
+        assertThat(arg.isNotRegistered(), is(true));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testInsertSubscriptionUsingNullSubscription() {
-        MarshalledSubscription marshalledSubscription = mock(MarshalledSubscription.class);
-        SubscriptionType type = mock(SubscriptionType.class);
-        container.insert(null, marshalledSubscription, type);
+        container.insert(null, mockArgMarshalled, mockArgIdentifier);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testInsertSubscriptionUsingNullSerializedSubscription() {
-        Subscription subscription = mock(Subscription.class);
-        SubscriptionType type = mock(SubscriptionType.class);
-        container.insert(subscription, null, type);
+    public void testInsertSubscriptionUsingNullMarshalledSubscription() {
+        container.insert(mockArgSubscription, null, mockArgIdentifier);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testInsertSubscriptionUsingNullSubscriptionType() {
-        Subscription subscription = mock(Subscription.class);
-        MarshalledSubscription marshalledSubscription = mock(MarshalledSubscription.class);
-        container.insert(subscription, marshalledSubscription, null);
+        container.insert(mockArgSubscription, mockArgMarshalled, null);
     }
 
     //endregion
@@ -335,32 +341,97 @@ public class SubscriptionContainerImplTest {
     //region UPDATE
     @Test
     public void testUpdate() {
+        CachedSubscription cachedSub = mock(CachedSubscription.class);
+        when(cachedSub.getSubscription()).thenReturn(Optional.of(mockArgSubscription));
+        when(cachedSub.isNotType(anyString())).thenReturn(false);
+        when(cachedSub.isNotRegistered()).thenReturn(false);
 
+        when(mockCache.get(anyString())).thenReturn(cachedSub);
+
+        container.update(mockArgSubscription, mockArgMarshalled, mockArgIdentifier);
+
+        ArgumentCaptor<CachedSubscription> argCaptor =
+                ArgumentCaptor.forClass(CachedSubscription.class);
+        verify(mockCache).remove(eq(SOME_ID));
+        verify(mockCache).put(eq(SOME_ID), argCaptor.capture());
+
+        CachedSubscription arg = argCaptor.getValue();
+        SubscriptionMetadata metadata = arg.getMetadata();
+
+        assertThat(metadata.getId(), is(SOME_ID));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testUpdateSubscriptionUsingNullSubscription() {
+        container.update(null, mockArgMarshalled, mockArgIdentifier);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testUpdateSubscriptionUsingNullMarshalledSubscription() {
+        container.update(mockArgSubscription, null, mockArgIdentifier);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testUpdateSubscriptionUsingNullSubscriptionIdentifier() {
+        container.update(mockArgSubscription, mockArgMarshalled, null);
     }
     //endregion
 
     //region DELETE
-    @Ignore
     @Test
     public void testDelete() {
-        SubscriptionIdentifier identifier = mock(SubscriptionIdentifier.class);
-        Subscription subscription = mock(Subscription.class);
-        when(identifier.getId()).thenReturn("id");
-        when(identifier.getTypeName()).thenReturn("type");
-
         CachedSubscription cachedSub = mock(CachedSubscription.class);
+        when(cachedSub.getSubscription()).thenReturn(Optional.of(mockArgSubscription));
+        when(cachedSub.isNotType(anyString())).thenReturn(false);
+        when(cachedSub.isNotRegistered()).thenReturn(false);
+
+        when(mockCache.get(anyString())).thenReturn(cachedSub);
+        container.delete(mockArgIdentifier);
+
+        verify(mockCache).remove(eq(SOME_ID));
+        verify(cachedSub).unregisterSubscription();
     }
 
-    @Ignore
     @Test(expected = SubscriptionStoreException.class)
-    public void testDeleteThrowsException() {
+    public void testDeleteWhenSubscriptionDoesNotExist() {
+        CachedSubscription cachedSub = mock(CachedSubscription.class);
+        when(cachedSub.getSubscription()).thenReturn(Optional.of(mockArgSubscription));
+        when(cachedSub.isNotType(anyString())).thenReturn(false);
+        when(cachedSub.isNotRegistered()).thenReturn(false);
 
+        when(mockCache.get(anyString())).thenReturn(null);
+        container.delete(mockArgIdentifier);
     }
 
-    @Ignore
+    @Test(expected = SubscriptionStoreException.class)
+    public void testDeleteWhenCacheThrowsException() {
+        CachedSubscription cachedSub = mock(CachedSubscription.class);
+        when(cachedSub.getSubscription()).thenReturn(Optional.of(mockArgSubscription));
+        when(cachedSub.isNotType(anyString())).thenReturn(false);
+        when(cachedSub.isNotRegistered()).thenReturn(false);
+
+        when(mockCache.get(anyString())).thenReturn(cachedSub);
+        doThrow(CacheException.class).when(mockCache)
+                .remove(eq(SOME_ID));
+        container.delete(mockArgIdentifier);
+
+        verify(cachedSub, never()).unregisterSubscription();
+    }
+
     @Test(expected = SubscriptionStoreException.class)
     public void testDeleteWhenOptionalIsEmpty() {
+        CachedSubscription cachedSub = mock(CachedSubscription.class);
+        when(cachedSub.getSubscription()).thenReturn(Optional.empty());
+        when(cachedSub.isNotType(anyString())).thenReturn(false);
+        when(cachedSub.isNotRegistered()).thenReturn(false);
 
+        when(mockCache.get(anyString())).thenReturn(cachedSub);
+        container.delete(mockArgIdentifier);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testDeleteSubscriptionUsingNullSubscriptionIdentifier() {
+        container.delete(null);
     }
     //endregion
 

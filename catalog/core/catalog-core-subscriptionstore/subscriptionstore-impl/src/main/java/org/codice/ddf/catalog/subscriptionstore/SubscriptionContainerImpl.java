@@ -158,16 +158,7 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
                 marshalledSubscription.getFilter(),
                 marshalledSubscription.getCallbackAddress());
 
-        CachedSubscription cachedSubscription = createCachedSubscription(metadata);
-        cachedSubscription.registerSubscription(subscription);
-
-        try {
-            subscriptionsCache.put(metadata.getId(), cachedSubscription);
-        } catch (CacheException e) {
-            cachedSubscription.unregisterSubscription();
-            throw new SubscriptionStoreException("Problem writing to the cache. ", e);
-        }
-
+        doInsert(subscription, metadata);
         return metadata;
     }
 
@@ -175,7 +166,7 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
      * {@inheritDoc}
      * <p>
      * Updates are performed by a delete first, then an insertion using the same id. The operations
-     * are almost identical to {@link #insert(Subscription, MarshalledSubscription, SubscriptionType)}
+     * are identical to {@link #insert(Subscription, MarshalledSubscription, SubscriptionType)}
      * and to {@link #delete(SubscriptionIdentifier)} with the exception of preserving the id in the
      * {@link SubscriptionMetadata}.
      */
@@ -185,30 +176,16 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
         validateSubscription(subscription);
         validateSerialized(marshalledSubscription);
         validateContainment(identifier, "update");
-        String subscriptionId = identifier.getId();
 
-        CachedSubscription original = subscriptionsCache.get(subscriptionId);
-        try {
-            subscriptionsCache.remove(subscriptionId);
-        } catch (CacheException e) {
-            throw new SubscriptionStoreException("Problem deleting from cache. ", e);
-        }
-        original.unregisterSubscription();
+        String subscriptionId = identifier.getId();
+        doDelete(subscriptionId);
 
         SubscriptionMetadata metadata = new SubscriptionMetadata(identifier.getTypeName(),
                 marshalledSubscription.getFilter(),
                 marshalledSubscription.getCallbackAddress(),
                 subscriptionId);
 
-        CachedSubscription cachedSubscription = createCachedSubscription(metadata);
-        cachedSubscription.registerSubscription(subscription);
-
-        try {
-            subscriptionsCache.put(metadata.getId(), cachedSubscription);
-        } catch (CacheException e) {
-            cachedSubscription.unregisterSubscription();
-            throw new SubscriptionStoreException("Problem writing to the cache. ", e);
-        }
+        doInsert(subscription, metadata);
     }
 
     /**
@@ -221,15 +198,7 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
     public synchronized Subscription delete(SubscriptionIdentifier identifier) {
         validateContainment(identifier, "delete");
         String subscriptionId = identifier.getId();
-
-        CachedSubscription cachedSubscription = subscriptionsCache.get(subscriptionId);
-        try {
-            subscriptionsCache.remove(subscriptionId);
-        } catch (CacheException e) {
-            throw new SubscriptionStoreException("Problem deleting from cache. ", e);
-        }
-        cachedSubscription.unregisterSubscription();
-
+        CachedSubscription cachedSubscription = doDelete(subscriptionId);
         return cachedSubscription.getSubscription()
                 .orElseThrow(() -> new SubscriptionStoreException("Could not get subscription. "));
     }
@@ -288,6 +257,34 @@ public class SubscriptionContainerImpl implements SubscriptionContainer {
                     factory.getTypeName()));
         }
         LOGGER.debug("SubscriptionFactory removed for {}", factory.getTypeName());
+    }
+
+    /**
+     * Helper method for core insert logic.
+     */
+    private void doInsert(Subscription subscription, SubscriptionMetadata metadata) {
+        CachedSubscription cachedSubscription = createCachedSubscription(metadata);
+        cachedSubscription.registerSubscription(subscription);
+        try {
+            subscriptionsCache.put(metadata.getId(), cachedSubscription);
+        } catch (CacheException e) {
+            cachedSubscription.unregisterSubscription();
+            throw new SubscriptionStoreException("Problem writing to the cache. ", e);
+        }
+    }
+
+    /**
+     * Helper method for core delete logic.
+     */
+    private CachedSubscription doDelete(String subscriptionId) {
+        CachedSubscription cachedSubscription = subscriptionsCache.get(subscriptionId);
+        try {
+            subscriptionsCache.remove(subscriptionId);
+        } catch (CacheException e) {
+            throw new SubscriptionStoreException("Problem deleting from cache. ", e);
+        }
+        cachedSubscription.unregisterSubscription();
+        return cachedSubscription;
     }
 
     /**
