@@ -17,6 +17,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -319,14 +321,14 @@ public class CswSubscriptionEndpoint implements CswSubscribe, Subscriber {
             QueryType query = (QueryType) request.getAbstractQuery()
                     .getValue();
 
-            validator.validateTypes(query.getTypeNames(), CswConstants.VERSION_2_0_2);
-            validator.validateElementNames(query);
-
             if (query.getConstraint() != null && query.getConstraint()
                     .isSetFilter() && query.getConstraint()
                     .isSetCqlText()) {
                 throw new CswException("A Csw Query can only have a Filter or CQL constraint");
             }
+
+            validator.validateTypes(query.getTypeNames(), CswConstants.VERSION_2_0_2);
+            validator.validateElementNames(query);
         }
 
         if (request.getResponseHandler() == null || request.getResponseHandler()
@@ -334,6 +336,14 @@ public class CswSubscriptionEndpoint implements CswSubscribe, Subscriber {
                 .get(0))) {
             throw new CswException(
                     "Unable to create subscription because deliveryMethodUrl is null or empty");
+        }
+
+        try {
+            URI.create(request.getResponseHandler()
+                    .get(0))
+                    .toURL();
+        } catch (MalformedURLException | IllegalArgumentException e) {
+            throw new CswException("Response handler was invalid. ", e);
         }
     }
 

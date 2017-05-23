@@ -17,12 +17,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.isNull;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,48 +28,47 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Dictionary;
 import java.util.List;
 
 import javax.ws.rs.core.Response;
 import javax.xml.bind.JAXBElement;
 
 import org.apache.commons.io.IOUtils;
+import org.codice.ddf.catalog.subscriptionstore.internal.MarshalledSubscription;
+import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionContainer;
+import org.codice.ddf.catalog.subscriptionstore.internal.SubscriptionIdentifier;
 import org.codice.ddf.spatial.ogc.csw.catalog.common.CswConstants;
 import org.codice.ddf.spatial.ogc.csw.catalog.common.CswException;
 import org.codice.ddf.spatial.ogc.csw.catalog.common.GetRecordsRequest;
 import org.codice.ddf.spatial.ogc.csw.catalog.common.transformer.TransformerManager;
 import org.codice.ddf.spatial.ogc.csw.catalog.endpoint.event.CswSubscription;
+import org.codice.ddf.spatial.ogc.csw.catalog.endpoint.event.CswSubscriptionFactory;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.Filter;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.cm.Configuration;
-import org.osgi.service.cm.ConfigurationAdmin;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 
-import ch.qos.logback.classic.Level;
 import ddf.catalog.data.Metacard;
 import ddf.catalog.event.EventProcessor;
-import ddf.catalog.event.Subscription;
 import ddf.catalog.operation.QueryRequest;
 import ddf.catalog.transform.CatalogTransformerException;
 import ddf.catalog.transform.InputTransformer;
 import ddf.security.SecurityConstants;
+import net.opengis.cat.csw.v_2_0_2.AbstractQueryType;
 import net.opengis.cat.csw.v_2_0_2.AcknowledgementType;
 import net.opengis.cat.csw.v_2_0_2.GetRecordsResponseType;
 import net.opengis.cat.csw.v_2_0_2.GetRecordsType;
-import net.opengis.cat.csw.v_2_0_2.ObjectFactory;
 import net.opengis.cat.csw.v_2_0_2.QueryType;
-import net.opengis.cat.csw.v_2_0_2.ResultType;
 import net.opengis.cat.csw.v_2_0_2.SearchResultsType;
 
+@RunWith(MockitoJUnitRunner.class)
 public class CswSubscriptionEndpointTest {
     private static final ch.qos.logback.classic.Logger CSW_LOGGER =
             (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(CswEndpoint.class);
@@ -83,66 +79,56 @@ public class CswSubscriptionEndpointTest {
 
     private static final String METACARD_SCHEMA = "urn:catalog:metacard";
 
-    private static BundleContext mockContext;
+    private static final String SUBSCRIPTION_ID = "urn:uuid:1234";
 
-    CswSubscriptionEndpoint cswSubscriptionEndpoint;
+    @Mock
+    private EventProcessor mockEventProcessor;
 
+    @Mock
     private TransformerManager mockMimeTypeManager;
 
+    @Mock
     private TransformerManager mockSchemaManager;
 
-    private Validator validator;
+    @Mock
+    private TransformerManager mockInputManager;
 
+    @Mock
+    private Validator mockValidator;
+
+    @Mock
+    private CswSubscriptionFactory mockCswSubFactory;
+
+    @Mock
+    private SubscriptionContainer mockContainer;
+
+    @Mock
+    private SubscriptionIdentifier mockIdentifier;
+
+    @Mock
     private CswQueryFactory queryFactory;
 
+    @Mock
     private QueryRequest query;
 
-    private ServiceRegistration serviceRegistration;
-
-    private ServiceReference subscriptionReference;
-
-    private Bundle bundle;
-
-    private Filter osgiFilter;
-
-    private ServiceReference configAdminRef;
-
-    private ConfigurationAdmin configAdmin;
-
-    private Configuration config;
-
-    private Long bundleId = 42L;
-
-    private static final String FILTER_STR = "filter serialized to a string";
+    private CswSubscriptionEndpoint cswSubscriptionEndpoint;
 
     private CswSubscription subscription;
 
-    String subscriptionId = "urn:uuid:1234";
-
     private GetRecordsRequest defaultRequest;
-
-    private EventProcessor eventProcessor;
-
-    private TransformerManager mockInputManager;
-
-    File systemKeystoreFile = null;
-
-    File systemTruststoreFile = null;
-
-    String password = "changeit";
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Before
     public void setUp() throws Exception {
-        systemKeystoreFile = temporaryFolder.newFile("serverKeystore.jks");
+        File systemKeystoreFile = temporaryFolder.newFile("serverKeystore.jks");
         FileOutputStream systemKeyOutStream = new FileOutputStream(systemKeystoreFile);
         InputStream systemKeyStream = CswSubscriptionEndpointTest.class.getResourceAsStream(
                 "/serverKeystore.jks");
         IOUtils.copy(systemKeyStream, systemKeyOutStream);
 
-        systemTruststoreFile = temporaryFolder.newFile("serverTruststore.jks");
+        File systemTruststoreFile = temporaryFolder.newFile("serverTruststore.jks");
         FileOutputStream systemTrustOutStream = new FileOutputStream(systemTruststoreFile);
         InputStream systemTrustStream = CswSubscriptionEndpointTest.class.getResourceAsStream(
                 "/serverTruststore.jks");
@@ -154,158 +140,137 @@ public class CswSubscriptionEndpointTest {
         System.setProperty(SecurityConstants.KEYSTORE_PATH, systemKeystoreFile.getAbsolutePath());
         System.setProperty(SecurityConstants.TRUSTSTORE_PATH,
                 systemTruststoreFile.getAbsolutePath());
+        String password = "changeit";
         System.setProperty(SecurityConstants.KEYSTORE_PASSWORD, password);
         System.setProperty(SecurityConstants.TRUSTSTORE_PASSWORD, password);
 
-        eventProcessor = mock(EventProcessor.class);
-        mockInputManager = mock(TransformerManager.class);
-        mockContext = mock(BundleContext.class);
-        mockMimeTypeManager = mock(TransformerManager.class);
-        mockSchemaManager = mock(TransformerManager.class);
-        validator = mock(Validator.class);
-        queryFactory = mock(CswQueryFactory.class);
-        query = mock(QueryRequest.class);
+        when(mockIdentifier.getId()).thenReturn(SUBSCRIPTION_ID);
         when(queryFactory.getQuery(any(GetRecordsType.class))).thenReturn(query);
-
-        serviceRegistration = mock(ServiceRegistration.class);
-        subscriptionReference = mock(ServiceReference.class);
-        bundle = mock(Bundle.class);
-        osgiFilter = mock(org.osgi.framework.Filter.class);
-        configAdminRef = mock(ServiceReference.class);
-        configAdmin = mock(ConfigurationAdmin.class);
-        config = mock(Configuration.class);
-        Configuration[] configArry = {config};
 
         defaultRequest = createDefaultGetRecordsRequest();
         subscription = new CswSubscription(defaultRequest.get202RecordsType(),
                 query,
                 mockMimeTypeManager);
 
-        when(osgiFilter.toString()).thenReturn(FILTER_STR);
-        doReturn(serviceRegistration).when(mockContext)
-                .registerService(eq(Subscription.class.getName()),
-                        any(Subscription.class),
-                        any(Dictionary.class));
-        doReturn(configAdminRef).when(mockContext)
-                .getServiceReference(eq(ConfigurationAdmin.class.getName()));
-        when(serviceRegistration.getReference()).thenReturn(subscriptionReference);
-        doReturn(bundle).when(subscriptionReference)
-                .getBundle();
-        when(subscriptionReference.getBundle()).thenReturn(bundle);
-        when(bundle.getBundleId()).thenReturn(bundleId);
-        when(mockContext.createFilter(anyString())).thenReturn(osgiFilter);
-        when(mockContext.getService(eq(configAdminRef))).thenReturn(configAdmin);
-        when(mockContext.getService(eq(subscriptionReference))).thenReturn(subscription);
-        when(configAdmin.listConfigurations(eq(FILTER_STR))).thenReturn(configArry);
-        when(configAdmin.createFactoryConfiguration(anyString(), isNull(String.class))).thenReturn(
-                config);
-
-        cswSubscriptionEndpoint = new CswSubscriptionEndpointStub(eventProcessor,
+        cswSubscriptionEndpoint = new CswSubscriptionEndpoint(mockEventProcessor,
                 mockMimeTypeManager,
                 mockSchemaManager,
                 mockInputManager,
-                validator,
-                queryFactory,
-                mockContext);
+                mockValidator,
+                mockCswSubFactory,
+                mockContainer);
     }
 
     @Test
     public void testDeleteRecordsSubscription() throws Exception {
-        // TODO: fix
-        //        cswSubscriptionEndpoint.addOrUpdateSubscription(defaultRequest.get202RecordsType(), true);
-        Response response = cswSubscriptionEndpoint.deleteRecordsSubscription(subscriptionId);
+        ArgumentCaptor<SubscriptionIdentifier> idCaptor = ArgumentCaptor.forClass(
+                SubscriptionIdentifier.class);
+        when(mockContainer.contains(any(SubscriptionIdentifier.class))).thenReturn(true);
+        when(mockContainer.delete(idCaptor.capture())).thenReturn(subscription);
+        Response response = cswSubscriptionEndpoint.deleteRecordsSubscription(SUBSCRIPTION_ID);
+        assertThat(idCaptor.getValue()
+                .getId(), is(SUBSCRIPTION_ID));
         assertThat(Response.Status.OK.getStatusCode(),
                 is(response.getStatusInfo()
                         .getStatusCode()));
-        verify(serviceRegistration).unregister();
-        verify(config).delete();
-
     }
 
     @Test
     public void testDeleteRecordsSubscriptionNoSubscription() throws Exception {
+        when(mockContainer.contains(any(SubscriptionIdentifier.class))).thenReturn(false);
         String requestId = "requestId";
         Response response = cswSubscriptionEndpoint.deleteRecordsSubscription(requestId);
         assertThat(Response.Status.NOT_FOUND.getStatusCode(),
                 is(response.getStatusInfo()
                         .getStatusCode()));
-
     }
 
     @Test
     public void testGetRecordsSubscriptionNoSubscription() throws Exception {
+        when(mockContainer.get(any(SubscriptionIdentifier.class))).thenReturn(null);
         String requestId = "requestId";
         Response response = cswSubscriptionEndpoint.getRecordsSubscription(requestId);
         assertThat(Response.Status.NOT_FOUND.getStatusCode(),
                 is(response.getStatusInfo()
                         .getStatusCode()));
-
     }
 
     @Test
     public void testGetRecordsSubscription() throws Exception {
-        // TODO: fix
-        //        cswSubscriptionEndpoint.addOrUpdateSubscription(defaultRequest.get202RecordsType(), true);
-        Response response = cswSubscriptionEndpoint.getRecordsSubscription(subscriptionId);
+        ArgumentCaptor<SubscriptionIdentifier> idCaptor = ArgumentCaptor.forClass(
+                SubscriptionIdentifier.class);
+        when(mockContainer.get(idCaptor.capture())).thenReturn(subscription);
+        Response response = cswSubscriptionEndpoint.getRecordsSubscription(SUBSCRIPTION_ID);
+        assertThat(Response.Status.OK.getStatusCode(),
+                is(response.getStatusInfo()
+                        .getStatusCode()));
+        assertThat("Expected match: ID given to container with ID given to endpoint",
+                idCaptor.getValue()
+                        .getId(),
+                is(SUBSCRIPTION_ID));
         AcknowledgementType getAck = (AcknowledgementType) response.getEntity();
         assertThat(defaultRequest.get202RecordsType(),
                 is(((JAXBElement<GetRecordsType>) getAck.getEchoedRequest()
                         .getAny()).getValue()));
-        verify(mockContext).getService(eq(subscriptionReference));
-
     }
 
     @Test
     public void testUpdateRecordsSubscription() throws Exception {
-        GetRecordsRequest getRecordsRequest = createDefaultGetRecordsRequest();
-        getRecordsRequest.setResponseHandler(RESPONSE_HANDLER_URL);
-        Response response = cswSubscriptionEndpoint.createRecordsSubscription(getRecordsRequest);
-        AcknowledgementType createAck = (AcknowledgementType) response.getEntity();
-        getRecordsRequest = createDefaultGetRecordsRequest();
-        getRecordsRequest.setResponseHandler(RESPONSE_HANDLER_URL);
-        getRecordsRequest.setResultType(ResultType.HITS.value());
-        response = cswSubscriptionEndpoint.updateRecordsSubscription(createAck.getRequestId(),
-                getRecordsRequest.get202RecordsType());
-        AcknowledgementType updateAck = (AcknowledgementType) response.getEntity();
-        assertThat(((GetRecordsType) ((JAXBElement) updateAck.getEchoedRequest()
-                .getAny()).getValue()).getResultType(), is(ResultType.HITS));
-        verify(serviceRegistration).unregister();
-        verify(config).delete();
-        verify(mockContext, times(2)).registerService(eq(Subscription.class.getName()),
-                any(Subscription.class),
-                any(Dictionary.class));
+        when(mockContainer.contains(any(SubscriptionIdentifier.class))).thenReturn(true);
+        Response response = cswSubscriptionEndpoint.updateRecordsSubscription(SUBSCRIPTION_ID,
+                defaultRequest.get202RecordsType());
+        ArgumentCaptor<MarshalledSubscription> marshalledCaptor = ArgumentCaptor.forClass(
+                MarshalledSubscription.class);
+        ArgumentCaptor<SubscriptionIdentifier> idCaptor = ArgumentCaptor.forClass(
+                SubscriptionIdentifier.class);
+        verify(mockContainer).update(any(CswSubscription.class),
+                marshalledCaptor.capture(),
+                idCaptor.capture());
+        assertThat(Response.Status.OK.getStatusCode(),
+                is(response.getStatusInfo()
+                        .getStatusCode()));
+        assertThat("Expected match: ID given to container with ID given to endpoint",
+                idCaptor.getValue()
+                        .getId(),
+                is(SUBSCRIPTION_ID));
+        assertThat("Expected callback address to match the response handler URL. ",
+                marshalledCaptor.getValue()
+                        .getCallbackAddress(),
+                is(RESPONSE_HANDLER_URL));
+    }
 
+    @Test
+    public void testUpdateRecordDoesNotExist() throws Exception {
+        when(mockContainer.contains(any(SubscriptionIdentifier.class))).thenReturn(false);
+        Response response = cswSubscriptionEndpoint.updateRecordsSubscription(SUBSCRIPTION_ID,
+                defaultRequest.get202RecordsType());
+        assertThat(Response.Status.NOT_FOUND.getStatusCode(),
+                is(response.getStatusInfo()
+                        .getStatusCode()));
     }
 
     @Test
     public void testCreateRecordsSubscriptionGET() throws Exception {
         GetRecordsRequest getRecordsRequest = createDefaultGetRecordsRequest();
-        getRecordsRequest.setResponseHandler(RESPONSE_HANDLER_URL);
         getRecordsRequest.setVersion("");
+        when(mockContainer.insert(any(CswSubscription.class),
+                any(MarshalledSubscription.class),
+                any(SubscriptionIdentifier.class))).thenReturn(mockIdentifier);
         Response response = cswSubscriptionEndpoint.createRecordsSubscription(getRecordsRequest);
         AcknowledgementType createAck = (AcknowledgementType) response.getEntity();
         assertThat(createAck, notNullValue());
-        verify(mockContext).registerService(eq(Subscription.class.getName()),
-                any(Subscription.class),
-                any(Dictionary.class));
-
     }
 
     @Test
     public void testCreateRecordsSubscriptionPOST() throws Exception {
-        CSW_LOGGER.setLevel(Level.DEBUG);
-        GetRecordsRequest getRecordsRequest = createDefaultGetRecordsRequest();
-        getRecordsRequest.setResponseHandler(RESPONSE_HANDLER_URL);
+        when(mockContainer.insert(any(CswSubscription.class),
+                any(MarshalledSubscription.class),
+                any(SubscriptionIdentifier.class))).thenReturn(mockIdentifier);
         Response response =
-                cswSubscriptionEndpoint.createRecordsSubscription(getRecordsRequest.get202RecordsType());
+                cswSubscriptionEndpoint.createRecordsSubscription(defaultRequest.get202RecordsType());
         AcknowledgementType createAck = (AcknowledgementType) response.getEntity();
         assertThat(createAck, notNullValue());
         assertThat(createAck.getRequestId(), notNullValue());
-        CSW_LOGGER.setLevel(Level.INFO);
-        verify(mockContext).registerService(eq(Subscription.class.getName()),
-                any(Subscription.class),
-                any(Dictionary.class));
-
     }
 
     @Test(expected = CswException.class)
@@ -313,96 +278,86 @@ public class CswSubscriptionEndpointTest {
         GetRecordsRequest getRecordsRequest = createDefaultGetRecordsRequest();
         getRecordsRequest.setResponseHandler(null);
         cswSubscriptionEndpoint.createRecordsSubscription(getRecordsRequest.get202RecordsType());
-
     }
 
     @Test(expected = CswException.class)
     public void testCreateRecordsSubscriptionGETNullRequest() throws CswException {
         cswSubscriptionEndpoint.createRecordsSubscription((GetRecordsRequest) null);
-
     }
 
     @Test(expected = CswException.class)
     public void testCreateRecordsSubscriptionPOSTNullRequest() throws CswException {
         cswSubscriptionEndpoint.createRecordsSubscription((GetRecordsType) null);
-
     }
 
     @Test(expected = CswException.class)
     public void testCreateRecordsSubscriptionPOSTBadResponseHandler() throws CswException {
+        when(mockContainer.insert(any(CswSubscription.class),
+                any(MarshalledSubscription.class),
+                any(SubscriptionIdentifier.class))).thenReturn(mockIdentifier);
         GetRecordsRequest getRecordsRequest = createDefaultGetRecordsRequest();
         getRecordsRequest.setResponseHandler("[]@!$&'()*+,;=");
         cswSubscriptionEndpoint.createRecordsSubscription(getRecordsRequest.get202RecordsType());
-
     }
 
-    private GetRecordsRequest createDefaultGetRecordsRequest() {
-        GetRecordsRequest grr = new GetRecordsRequest();
-        grr.setRequestId(subscriptionId);
-        grr.setResponseHandler(RESPONSE_HANDLER_URL);
-        grr.setService(CswConstants.CSW);
-        grr.setVersion(CswConstants.VERSION_2_0_2);
-        grr.setRequest(CswConstants.GET_RECORDS);
-        grr.setNamespace(CswConstants.XMLNS_DEFINITION_PREFIX + CswConstants.CSW_NAMESPACE_PREFIX
-                + CswConstants.EQUALS + CswConstants.CSW_OUTPUT_SCHEMA
-                + CswConstants.XMLNS_DEFINITION_POSTFIX + CswConstants.COMMA
+    @Test(expected = CswException.class)
+    public void testUnknownQueryType() throws CswException {
+        GetRecordsType realRecordsType = defaultRequest.get202RecordsType();
+        GetRecordsType mockRecordsType = mock(GetRecordsType.class, RETURNS_DEEP_STUBS);
 
-                + CswConstants.XMLNS_DEFINITION_PREFIX + CswConstants.OGC_NAMESPACE_PREFIX
-                + CswConstants.EQUALS + CswConstants.OGC_SCHEMA
-                + CswConstants.XMLNS_DEFINITION_POSTFIX + CswConstants.COMMA
-
-                + CswConstants.XMLNS_DEFINITION_PREFIX + CswConstants.GML_NAMESPACE_PREFIX
-                + CswConstants.EQUALS + CswConstants.GML_SCHEMA
-                + CswConstants.XMLNS_DEFINITION_POSTFIX + CswConstants.COMMA);
-
-        grr.setOutputSchema(CswConstants.CSW_OUTPUT_SCHEMA);
-        grr.setOutputFormat(CswConstants.OUTPUT_FORMAT_XML);
-        grr.setTypeNames(VALID_TYPES);
-        return grr;
+        when(mockRecordsType.getOutputFormat()).thenReturn(realRecordsType.getOutputFormat());
+        when(mockRecordsType.getOutputSchema()).thenReturn(realRecordsType.getOutputSchema());
+        when(mockRecordsType.getAbstractQuery()
+                .getValue()).then((Answer<Object>) invocation -> new NotQueryType());
+        cswSubscriptionEndpoint.createRecordsSubscription(mockRecordsType);
     }
 
-    @Test
-    public void testCreateOrUpdateSubscriptionPersitanceFalse() throws Exception {
-        ObjectFactory objectFactory = new ObjectFactory();
-        GetRecordsType getRecordsType = createDefaultGetRecordsRequest().get202RecordsType();
-        QueryType queryType = new QueryType();
-        getRecordsType.setAbstractQuery(objectFactory.createQuery(queryType));
+    @Test(expected = CswException.class)
+    public void testConstraintsWithFilterAndCql() throws CswException {
+        GetRecordsType realRecordsType = defaultRequest.get202RecordsType();
+        GetRecordsType mockRecordsType = mock(GetRecordsType.class, RETURNS_DEEP_STUBS);
 
-        // TODO: fix
-        //        cswSubscriptionEndpoint.createOrUpdateSubscription(getRecordsType, subscriptionId, false);
-        verify(mockContext).registerService(eq(Subscription.class.getName()),
-                any(Subscription.class),
-                any(Dictionary.class));
+        when(mockRecordsType.getOutputFormat()).thenReturn(realRecordsType.getOutputFormat());
+        when(mockRecordsType.getOutputSchema()).thenReturn(realRecordsType.getOutputSchema());
+
+        QueryType mockQueryType = mock(QueryType.class, RETURNS_DEEP_STUBS);
+        when(mockRecordsType.getAbstractQuery()
+                .getValue()).then((Answer<AbstractQueryType>) invocation -> realRecordsType.getAbstractQuery()
+                .getValue())
+                .then((Answer<QueryType>) invocation -> mockQueryType);
+        when(mockQueryType.getConstraint()
+                .isSetFilter()).thenReturn(true);
+        when(mockQueryType.getConstraint()
+                .isSetCqlText()).thenReturn(true);
+
+        cswSubscriptionEndpoint.createRecordsSubscription(mockRecordsType);
     }
 
     @Test
     public void testDeletedSubscription() throws Exception {
-        assertThat(cswSubscriptionEndpoint.deleteSubscription(subscriptionId), is(false));
-        // TODO: fix
-        //        cswSubscriptionEndpoint.addOrUpdateSubscription(defaultRequest.get202RecordsType(), true);
-        assertThat(cswSubscriptionEndpoint.deleteSubscription(subscriptionId), is(true));
-        verify(serviceRegistration, times(1)).unregister();
-        verify(config, times(2)).delete();
+        when(mockContainer.delete(anyObject())).thenReturn(null);
+        assertThat(cswSubscriptionEndpoint.deleteSubscription(SUBSCRIPTION_ID), is(false));
+        when(mockContainer.delete(anyObject())).thenReturn(subscription);
+        assertThat(cswSubscriptionEndpoint.deleteSubscription(SUBSCRIPTION_ID), is(true));
     }
 
     @Test
     public void testCreateEvent() throws Exception {
         cswSubscriptionEndpoint.createEvent(getRecordsResponse(1));
-        verify(eventProcessor).notifyCreated(any(Metacard.class));
+        verify(mockEventProcessor).notifyCreated(any(Metacard.class));
     }
 
     @Test
     public void testUpdateEvent() throws Exception {
-
         cswSubscriptionEndpoint.updateEvent(getRecordsResponse(2));
-        verify(eventProcessor).notifyUpdated(any(Metacard.class), any(Metacard.class));
+        verify(mockEventProcessor).notifyUpdated(any(Metacard.class), any(Metacard.class));
 
     }
 
     @Test
     public void testDeleteEvent() throws Exception {
         cswSubscriptionEndpoint.deleteEvent(getRecordsResponse(1));
-        verify(eventProcessor).notifyDeleted(any(Metacard.class));
+        verify(mockEventProcessor).notifyDeleted(any(Metacard.class));
     }
 
     @Test(expected = CswException.class)
@@ -432,6 +387,31 @@ public class CswSubscriptionEndpointTest {
         cswSubscriptionEndpoint.deleteEvent(getRecordsResponse);
     }
 
+    private GetRecordsRequest createDefaultGetRecordsRequest() {
+        GetRecordsRequest grr = new GetRecordsRequest();
+        grr.setRequestId(SUBSCRIPTION_ID);
+        grr.setResponseHandler(RESPONSE_HANDLER_URL);
+        grr.setService(CswConstants.CSW);
+        grr.setVersion(CswConstants.VERSION_2_0_2);
+        grr.setRequest(CswConstants.GET_RECORDS);
+        grr.setNamespace(CswConstants.XMLNS_DEFINITION_PREFIX + CswConstants.CSW_NAMESPACE_PREFIX
+                + CswConstants.EQUALS + CswConstants.CSW_OUTPUT_SCHEMA
+                + CswConstants.XMLNS_DEFINITION_POSTFIX + CswConstants.COMMA
+
+                + CswConstants.XMLNS_DEFINITION_PREFIX + CswConstants.OGC_NAMESPACE_PREFIX
+                + CswConstants.EQUALS + CswConstants.OGC_SCHEMA
+                + CswConstants.XMLNS_DEFINITION_POSTFIX + CswConstants.COMMA
+
+                + CswConstants.XMLNS_DEFINITION_PREFIX + CswConstants.GML_NAMESPACE_PREFIX
+                + CswConstants.EQUALS + CswConstants.GML_SCHEMA
+                + CswConstants.XMLNS_DEFINITION_POSTFIX + CswConstants.COMMA);
+
+        grr.setOutputSchema(CswConstants.CSW_OUTPUT_SCHEMA);
+        grr.setOutputFormat(CswConstants.OUTPUT_FORMAT_XML);
+        grr.setTypeNames(VALID_TYPES);
+        return grr;
+    }
+
     private GetRecordsResponseType getRecordsResponse(int metacardCount)
             throws IOException, CatalogTransformerException {
         InputTransformer inputTransformer = mock(InputTransformer.class);
@@ -452,24 +432,13 @@ public class CswSubscriptionEndpointTest {
         return getRecordsResponse;
     }
 
-    public static class CswSubscriptionEndpointStub extends CswSubscriptionEndpoint {
-        private final BundleContext bundleContext;
+    private static class NotQueryType extends AbstractQueryType {
+        public NotQueryType() {
+        }
 
-        public CswSubscriptionEndpointStub(EventProcessor eventProcessor,
-                TransformerManager mimeTypeTransformerManager,
-                TransformerManager schemaTransformerManager,
-                TransformerManager inputTransformerManager, Validator validator,
-                CswQueryFactory queryFactory, BundleContext context) {
-            super(eventProcessor,
-                    mimeTypeTransformerManager,
-                    schemaTransformerManager,
-                    inputTransformerManager,
-                    validator,
-                    // TODO: fix
-                    null,
-                    null);
-            this.bundleContext = context;
+        @Override
+        public Object createNewInstance() {
+            return null;
         }
     }
-
 }
