@@ -38,5 +38,6 @@
         <module>catalog-plugin-metacardbackup-api</module>
         <module>catalog-plugin-metacardbackup-filestorage</module>
         <module>catalog-plugin-metacardbackup</module>
+        <module>catalog-plugin-metacardingest-fulltext</module>
     </modules>
 </project>

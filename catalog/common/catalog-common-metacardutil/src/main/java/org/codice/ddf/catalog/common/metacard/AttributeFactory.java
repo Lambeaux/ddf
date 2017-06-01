@@ -11,7 +11,7 @@
  * is distributed along with this program and can be found at
  * <http://www.gnu.org/licenses/lgpl.html>.
  */
-package org.codice.ddf.catalog.plugin.metacard.util;
+package org.codice.ddf.catalog.common.metacard;
 
 import static org.apache.commons.lang.Validate.notEmpty;
 import static org.apache.commons.lang.Validate.notNull;

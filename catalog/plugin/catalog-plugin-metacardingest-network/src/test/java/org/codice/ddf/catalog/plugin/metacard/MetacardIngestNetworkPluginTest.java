@@ -29,9 +29,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.shiro.util.ThreadContext;
-import org.codice.ddf.catalog.plugin.metacard.util.AttributeFactory;
-import org.codice.ddf.catalog.plugin.metacard.util.KeyValueParser;
-import org.codice.ddf.catalog.plugin.metacard.util.MetacardServices;
+import org.codice.ddf.catalog.common.metacard.AttributeFactory;
+import org.codice.ddf.catalog.common.metacard.KeyValueParser;
+import org.codice.ddf.catalog.common.metacard.MetacardServices;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

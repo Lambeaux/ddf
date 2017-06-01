@@ -23,15 +23,15 @@
                             ref="types"/>
     </reference-list>
 
-    <bean id="parser" class="org.codice.ddf.catalog.plugin.metacard.util.KeyValueParser"/>
+    <bean id="parser" class="org.codice.ddf.catalog.common.metacard.KeyValueParser"/>
 
     <bean id="metacardServices"
-          class="org.codice.ddf.catalog.plugin.metacard.util.MetacardServices">
+          class="org.codice.ddf.catalog.common.metacard.MetacardServices">
         <argument ref="types"/>
     </bean>
 
     <bean id="attributeFactory"
-          class="org.codice.ddf.catalog.plugin.metacard.util.AttributeFactory"/>
+          class="org.codice.ddf.catalog.common.metacard.AttributeFactory"/>
 
     <bean id="initialMetacardCondition"
           class="org.codice.ddf.catalog.plugin.metacard.MetacardCondition">

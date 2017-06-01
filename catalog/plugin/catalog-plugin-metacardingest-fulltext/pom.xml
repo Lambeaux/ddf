@@ -22,8 +22,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>catalog-plugin-metacardingest-network</artifactId>
-    <name>DDF :: Catalog :: Plugin :: Metacard Ingest :: Network</name>
+    <artifactId>catalog-plugin-metacardingest-fulltext</artifactId>
+    <name>DDF :: Catalog :: Plugin :: Metacard Ingest :: Full Text</name>
     <packaging>bundle</packaging>
 
     <dependencies>
@@ -43,14 +43,6 @@
         <dependency>
             <groupId>ddf.platform.util</groupId>
             <artifactId>platform-util</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.shiro</groupId>
-            <artifactId>shiro-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-ext</artifactId>
         </dependency>
     </dependencies>
 
@@ -89,19 +81,18 @@
                                         <limit>
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.78</minimum>
+                                            <minimum>0.00</minimum>
                                         </limit>
                                         <limit>
                                             <counter>BRANCH</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.82</minimum>
+                                            <minimum>0.00</minimum>
                                         </limit>
                                         <limit>
                                             <counter>COMPLEXITY</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.78</minimum>
+                                            <minimum>0.00</minimum>
                                         </limit>
-
                                     </limits>
                                 </rule>
                             </rules>

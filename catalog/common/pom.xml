@@ -25,5 +25,6 @@
     <name>DDF :: Catalog :: Common</name>
     <modules>
         <module>catalog-common-geo-formatter</module>
+        <module>catalog-common-metacardutil</module>
     </modules>
 </project>

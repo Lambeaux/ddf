@@ -22,7 +22,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
-import org.codice.ddf.catalog.plugin.metacard.util.KeyValueParser;
+import org.codice.ddf.catalog.common.metacard.KeyValueParser;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;

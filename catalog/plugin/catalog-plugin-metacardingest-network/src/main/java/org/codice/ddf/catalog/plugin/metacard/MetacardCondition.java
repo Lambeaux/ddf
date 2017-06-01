@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.codice.ddf.catalog.plugin.metacard.util.KeyValueParser;
+import org.codice.ddf.catalog.common.metacard.KeyValueParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
