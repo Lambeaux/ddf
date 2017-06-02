@@ -91,7 +91,7 @@ public class MetacardIngestNetworkPluginTest {
     private AttributeFactory mockAttributeFactory;
 
     @Mock
-    private MetacardCondition mockMetacardCondition;
+    private MetacardNetworkCondition mockMetacardCondition;
 
     private List<Metacard> metacards;
 
@@ -157,7 +157,7 @@ public class MetacardIngestNetworkPluginTest {
 
     @Test
     public void testGetters() throws Exception {
-        MetacardCondition metacardCondition = new MetacardCondition(CRITERIA_KEY,
+        MetacardNetworkCondition metacardCondition = new MetacardNetworkCondition(CRITERIA_KEY,
                 EXPECTED_VALUE,
                 newAttributes,
                 mockParser);
@@ -178,7 +178,7 @@ public class MetacardIngestNetworkPluginTest {
     @Test
     public void testUpdateCondition() throws Exception {
         List<String> tempList = ImmutableList.of();
-        MetacardCondition metacardCondition = new MetacardCondition("key",
+        MetacardNetworkCondition metacardCondition = new MetacardNetworkCondition("key",
                 "value",
                 tempList,
                 mockParser);

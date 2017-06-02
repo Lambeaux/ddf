@@ -51,7 +51,7 @@ import ddf.catalog.plugin.StopProcessingException;
  * appending new values within a multi-valued attribute onto an already existing one. As long as
  * an attribute is not null, it cannot be overwritten.
  * <p>
- * See {@link MetacardCondition} for details on its immutability and volatility.
+ * See {@link MetacardNetworkCondition} for details on its immutability and volatility.
  */
 public class MetacardIngestNetworkPlugin implements PreAuthorizationPlugin {
 
@@ -71,7 +71,7 @@ public class MetacardIngestNetworkPlugin implements PreAuthorizationPlugin {
 
     private final AttributeFactory attributeFactory;
 
-    private volatile MetacardCondition metacardCondition;
+    private volatile MetacardNetworkCondition metacardCondition;
 
     private Map<String, Object> initParameters;
 
@@ -80,7 +80,7 @@ public class MetacardIngestNetworkPlugin implements PreAuthorizationPlugin {
      */
     public MetacardIngestNetworkPlugin(KeyValueParser keyValueParser,
             MetacardServices metacardServices, AttributeFactory attributeFactory,
-            MetacardCondition metacardCondition) {
+            MetacardNetworkCondition metacardCondition) {
         this.keyValueParser = keyValueParser;
         this.metacardServices = metacardServices;
         this.attributeFactory = attributeFactory;
@@ -132,13 +132,12 @@ public class MetacardIngestNetworkPlugin implements PreAuthorizationPlugin {
      * rule.
      */
     public void updateCondition(Map<String, Object> properties) {
-
         if (properties != null) {
             String criteriaKey = (String) properties.get(CRITERIA_KEY);
             String expectedValue = (String) properties.get(EXPECTED_VALUE);
             String[] newAttributes = (String[]) properties.get(NEW_ATTRIBUTES);
 
-            metacardCondition = new MetacardCondition(criteriaKey,
+            metacardCondition = new MetacardNetworkCondition(criteriaKey,
                     expectedValue,
                     Arrays.asList(newAttributes),
                     keyValueParser);

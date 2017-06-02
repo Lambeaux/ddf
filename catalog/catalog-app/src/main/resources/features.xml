@@ -448,11 +448,13 @@
         <bundle>mvn:ddf.catalog.plugin/catalog-plugin-clientinfo/${project.version}</bundle>
     </feature>
 
-    <feature name="catalog-metacardingest-network" install="auto" version="${project.version}"
-             description="Conditional attribute enhancement to metacards during ingest using client network information">
+    <feature name="catalog-metacardingest" install="auto" version="${project.version}"
+             description="Conditional attribute enhancement to metacards during ingest">
         <feature prerequisite="true">catalog-core-api</feature>
         <feature prerequisite="true">clientinfo-filter</feature>
         <bundle>mvn:ddf.catalog.plugin/catalog-plugin-metacardingest-network/${project.version}
+        </bundle>
+        <bundle>mvn:ddf.catalog.plugin/catalog-plugin-metacardingest-fulltext/${project.version}
         </bundle>
     </feature>
 

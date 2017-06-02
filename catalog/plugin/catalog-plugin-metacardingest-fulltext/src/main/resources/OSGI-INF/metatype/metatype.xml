@@ -17,6 +17,11 @@
     <OCD name="Catalog Metacard Ingest Fulltext Plugin"
          id="org.codice.ddf.catalog.plugin.metacard.MetacardIngestFulltextPlugin">
 
+        <AD description="List of dirty words that, if any are detected in the metadata, will trigger the below attributes."
+            name="Keywords" id="keywords" required="true" type="String"
+            cardinality="100"
+            default=""/>
+
         <AD description="New metacard attributes to apply; if an attribute is specified here, it will be placed on the metacard only if the attribute is not already set. The format should be 'key=value' where 'value' can be a comma-separated list of strings. Whitespace is ignored."
             name="New Attributes" id="newAttributes" required="true" type="String"
             cardinality="100"

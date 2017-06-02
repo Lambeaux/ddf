@@ -30,8 +30,8 @@ import org.slf4j.LoggerFactory;
  * ingest traffic (i.e. attempts to test a scheme criteria for an IP address value, which will
  * produce undefined behavior, resulting with incorrect attribute markings).
  */
-public class MetacardCondition {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MetacardCondition.class);
+public class MetacardNetworkCondition {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetacardNetworkCondition.class);
 
     private String criteriaKey;
 
@@ -41,11 +41,11 @@ public class MetacardCondition {
 
     private Map<String, String> parsedAttributes;
 
-    public MetacardCondition(final String criteriaKey, final String expectedValue) {
+    public MetacardNetworkCondition(final String criteriaKey, final String expectedValue) {
         this(criteriaKey, expectedValue, new ArrayList<>(), new KeyValueParser());
     }
 
-    public MetacardCondition(final String criteriaKey, final String expectedValue,
+    public MetacardNetworkCondition(final String criteriaKey, final String expectedValue,
             final List<String> newAttributes, final KeyValueParser parser) {
         this.criteriaKey = criteriaKey.trim();
         this.expectedValue = expectedValue.trim();

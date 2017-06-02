@@ -15,4 +15,52 @@
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
            xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0">
 
+    <bean id="types" class="ddf.catalog.util.impl.SortedServiceList"/>
+    <reference-list id="typesList"
+                    interface="ddf.catalog.data.MetacardType"
+                    availability="optional">
+        <reference-listener bind-method="bindPlugin" unbind-method="unbindPlugin"
+                            ref="types"/>
+    </reference-list>
+
+    <reference id="framework" interface="ddf.catalog.CatalogFramework"/>
+
+    <bean id="parser" class="org.codice.ddf.catalog.common.metacard.KeyValueParser"/>
+
+    <bean id="metacardServices"
+          class="org.codice.ddf.catalog.common.metacard.MetacardServices">
+        <argument ref="types"/>
+    </bean>
+
+    <bean id="attributeFactory"
+          class="org.codice.ddf.catalog.common.metacard.AttributeFactory"/>
+
+    <bean id="initialMetacardCondition"
+          class="org.codice.ddf.catalog.plugin.metacard.MetacardTextCondition">
+        <argument>
+            <list/>
+        </argument>
+        <argument>
+            <list/>
+        </argument>
+        <argument ref="parser"/>
+    </bean>
+
+    <cm:managed-service-factory
+            id="metacardFulltextRules"
+            factory-pid="org.codice.ddf.catalog.plugin.metacard.MetacardIngestFulltextPlugin"
+            interface="ddf.catalog.plugin.PreAuthorizationPlugin">
+        <cm:managed-component
+                class="org.codice.ddf.catalog.plugin.metacard.MetacardIngestFulltextPlugin"
+                init-method="init" destroy-method="destroy">
+            <argument ref="parser"/>
+            <argument ref="metacardServices"/>
+            <argument ref="attributeFactory"/>
+            <argument ref="initialMetacardCondition"/>
+            <argument ref="framework"/>
+            <cm:managed-properties persistent-id="" update-strategy="component-managed"
+                                   update-method="updateCondition"/>
+        </cm:managed-component>
+    </cm:managed-service-factory>
+
 </blueprint>

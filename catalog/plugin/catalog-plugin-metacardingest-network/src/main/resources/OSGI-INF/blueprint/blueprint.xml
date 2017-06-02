@@ -34,7 +34,7 @@
           class="org.codice.ddf.catalog.common.metacard.AttributeFactory"/>
 
     <bean id="initialMetacardCondition"
-          class="org.codice.ddf.catalog.plugin.metacard.MetacardCondition">
+          class="org.codice.ddf.catalog.plugin.metacard.MetacardNetworkCondition">
         <argument value="None"/>
         <argument value="None"/>
         <argument>
@@ -44,7 +44,7 @@
     </bean>
 
     <cm:managed-service-factory
-            id="metacardAdjustmentPluginInstances"
+            id="metacardNetworkRules"
             factory-pid="org.codice.ddf.catalog.plugin.metacard.MetacardIngestNetworkPlugin"
             interface="ddf.catalog.plugin.PreAuthorizationPlugin">
         <cm:managed-component

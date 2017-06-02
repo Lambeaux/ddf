@@ -33,11 +33,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
- * Assert that {@link MetacardCondition}s behave properly, and maintain the component separation so
+ * Assert that {@link MetacardNetworkCondition}s behave properly, and maintain the component separation so
  * that they can be mocked out in other tests.
  */
 @RunWith(MockitoJUnitRunner.class)
-public class MetacardConditionTest {
+public class MetacardNetworkConditionTest {
 
     private static final Map<String, Serializable> CRITERIA = ImmutableMap.of("name", "bob jones");
 
@@ -48,37 +48,37 @@ public class MetacardConditionTest {
     @Mock
     private KeyValueParser mockParser;
 
-    private MetacardCondition metacardCondition;
+    private MetacardNetworkCondition metacardCondition;
 
     @Test
     public void testAutoTrimmingBehavior() throws Exception {
-        metacardCondition = new MetacardCondition("   key  ", " value");
+        metacardCondition = new MetacardNetworkCondition("   key  ", " value");
         assertThat(metacardCondition.getCriteriaKey(), is("key"));
         assertThat(metacardCondition.getExpectedValue(), is("value"));
     }
 
     @Test
     public void testMetacardConditionCriteriaWithoutKey() throws Exception {
-        metacardCondition = new MetacardCondition("address", "555 Riverside Road");
+        metacardCondition = new MetacardNetworkCondition("address", "555 Riverside Road");
         assertThat(metacardCondition.applies(CRITERIA), is(false));
     }
 
     @Test
     public void testMetacardConditionEqualityFailure() throws Exception {
-        metacardCondition = new MetacardCondition("name", "bob saget");
+        metacardCondition = new MetacardNetworkCondition("name", "bob saget");
         assertThat(metacardCondition.applies(CRITERIA), is(false));
     }
 
     @Test
     public void testMetacardConditionSuccessful() throws Exception {
-        metacardCondition = new MetacardCondition("name", "bob jones");
+        metacardCondition = new MetacardNetworkCondition("name", "bob jones");
         assertThat(metacardCondition.applies(CRITERIA), is(true));
     }
 
     @Test
     public void testParserGetsCalledAndCachesMap() {
         when(mockParser.parsePairsToMap(ATTRIBUTE_SETTERS)).thenReturn(EXPECTED_MAP);
-        metacardCondition = new MetacardCondition("name",
+        metacardCondition = new MetacardNetworkCondition("name",
                 "bob jones",
                 ATTRIBUTE_SETTERS,
                 mockParser);
