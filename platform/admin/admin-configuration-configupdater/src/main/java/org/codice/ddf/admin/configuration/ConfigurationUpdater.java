@@ -15,6 +15,7 @@ package org.codice.ddf.admin.configuration;
 
 import static com.google.common.io.Files.getFileExtension;
 import static java.lang.String.format;
+import static java.util.Collections.list;
 
 import com.google.common.annotations.VisibleForTesting;
 import ddf.security.common.audit.SecurityLogger;
@@ -32,6 +33,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.codice.ddf.admin.core.api.ConfigurationAdmin;
 import org.codice.ddf.platform.io.internal.PersistenceStrategy;
@@ -73,6 +76,8 @@ public class ConfigurationUpdater implements ConfigurationPersistencePlugin {
   private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationUpdater.class);
 
   private static final Pattern ENC_PATTERN = Pattern.compile("^ENC\\((.*)\\)$");
+
+  private static final Pattern PROP_PATTERN = Pattern.compile("\\$\\{(\\p{ASCII})+}");
 
   static final String FELIX_FILENAME = "felix.fileinstall.filename";
 
@@ -265,6 +270,9 @@ public class ConfigurationUpdater implements ConfigurationPersistencePlugin {
       throws IOException {
     if (dest != null && dest.exists()) {
       encryptPasswords(appropriatePid, configAdminState, this::encryptValue);
+      // TODO: Can't do this - need to update the deepEquals and build the dictionary to write from
+      // scratch, otherwise we loose property variables.
+      configAdminState = expand(configAdminState);
       if (!cachedData.equalProps(configAdminState)) {
         writeConfigFile(dest, configAdminState);
         SecurityLogger.audit("Updated config file [{}]", dest.getAbsolutePath());
@@ -272,6 +280,44 @@ public class ConfigurationUpdater implements ConfigurationPersistencePlugin {
         cachedData.setProps(configAdminState);
       }
     }
+  }
+
+  /**
+   * Returns a new {@link Dictionary} where values containing system property notation such as
+   * {@code ${my.system.property.name}} are substituted with their appropriate values.
+   */
+  @SuppressWarnings("squid:S1149" /* API-bound on Dictionary for Config Admin */)
+  private Dictionary<String, Object> expand(Dictionary<String, Object> original) {
+    Dictionary<String, Object> expanded = new Hashtable<>();
+    for (String key : list(original.keys())) {
+      Object val = original.get(key);
+      if (val instanceof String) {
+        expanded.put(
+            key,
+            Stream.of(val)
+                .map(String.class::cast)
+                .flatMap(PROP_PATTERN::splitAsStream)
+                .map(this::substituteProperty)
+                .collect(Collectors.joining()));
+      } else {
+        expanded.put(key, val);
+      }
+    }
+    return expanded;
+  }
+
+  /**
+   * If the given String fragment is not a system property reference, return the fragment unchanged.
+   * Otherwise, return the value of the system property referenced. If the property is null, the
+   * empty String is returned.
+   */
+  private String substituteProperty(String fragment) {
+    if (PROP_PATTERN.matcher(fragment).matches()) {
+      String propertyName = fragment.substring(2, fragment.length() - 1);
+      String propertyValue = System.getProperty(propertyName);
+      return (propertyValue == null) ? "" : propertyValue;
+    }
+    return fragment;
   }
 
   /**
