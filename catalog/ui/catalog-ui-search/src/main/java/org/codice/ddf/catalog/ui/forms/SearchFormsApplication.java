@@ -25,6 +25,7 @@ import ddf.catalog.data.Metacard;
 import ddf.catalog.data.Result;
 import ddf.catalog.operation.DeleteResponse;
 import ddf.catalog.operation.impl.DeleteRequestImpl;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -34,6 +35,7 @@ import org.boon.json.JsonSerializerFactory;
 import org.boon.json.ObjectMapper;
 import org.codice.ddf.catalog.ui.forms.model.FilterNodeValueSerializer;
 import org.codice.ddf.catalog.ui.forms.model.TemplateTransformer;
+import org.codice.ddf.catalog.ui.forms.model.pojo.CommonTemplate;
 import org.codice.ddf.catalog.ui.util.EndpointUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,6 +94,7 @@ public class SearchFormsApplication implements SparkApplication {
                 .filter(Objects::nonNull)
                 .map(transformer::toFormTemplate)
                 .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(CommonTemplate::getTitle).reversed())
                 .collect(Collectors.toList()),
         MAPPER::toJson);
 
@@ -105,8 +108,10 @@ public class SearchFormsApplication implements SparkApplication {
                 .filter(Objects::nonNull)
                 .map(transformer::toFieldFilter)
                 .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(CommonTemplate::getTitle).reversed())
                 .collect(Collectors.toList()),
         MAPPER::toJson);
+
     delete(
         "/forms/:id",
         APPLICATION_JSON,
