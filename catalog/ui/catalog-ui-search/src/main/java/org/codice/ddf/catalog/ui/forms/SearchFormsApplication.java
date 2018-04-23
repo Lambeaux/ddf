@@ -94,7 +94,7 @@ public class SearchFormsApplication implements SparkApplication {
                 .filter(Objects::nonNull)
                 .map(transformer::toFormTemplate)
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(CommonTemplate::getTitle).reversed())
+                .sorted(Comparator.comparing(CommonTemplate::getTitle))
                 .collect(Collectors.toList()),
         MAPPER::toJson);
 
@@ -108,7 +108,7 @@ public class SearchFormsApplication implements SparkApplication {
                 .filter(Objects::nonNull)
                 .map(transformer::toFieldFilter)
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(CommonTemplate::getTitle).reversed())
+                .sorted(Comparator.comparing(CommonTemplate::getTitle))
                 .collect(Collectors.toList()),
         MAPPER::toJson);
 
