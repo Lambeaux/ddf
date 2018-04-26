@@ -24,7 +24,6 @@ import org.codice.ddf.catalog.ui.forms.data.AttributeGroupMetacard;
 import org.codice.ddf.catalog.ui.forms.data.QueryTemplateMetacard;
 import org.codice.ddf.catalog.ui.forms.filter.FilterProcessingException;
 import org.codice.ddf.catalog.ui.forms.filter.FilterReader;
-import org.codice.ddf.catalog.ui.forms.filter.VisitableXmlElement;
 import org.codice.ddf.catalog.ui.forms.filter.VisitableXmlElementImpl;
 import org.codice.ddf.catalog.ui.forms.model.pojo.FieldFilter;
 import org.codice.ddf.catalog.ui.forms.model.pojo.FormTemplate;
@@ -52,13 +51,13 @@ public class TemplateTransformer {
       return null;
     }
     QueryTemplateMetacard wrapped = new QueryTemplateMetacard(metacard);
-    JsonTransformVisitor visitor = new JsonTransformVisitor();
+    TransformVisitor<FilterNode> visitor = new TransformVisitor<>(new JsonModelBuilder());
     try {
       FilterReader reader = new FilterReader();
       JAXBElement<FilterType> root =
           reader.unmarshalFilter(
               new ByteArrayInputStream(wrapped.getFormsFilter().getBytes("UTF-8")));
-      makeVisitable(root).accept(visitor);
+      VisitableXmlElementImpl.create(root).accept(visitor);
       return new FormTemplate(wrapped, visitor.getResult());
     } catch (JAXBException | UnsupportedEncodingException e) {
       LOGGER.error(
@@ -88,9 +87,5 @@ public class TemplateTransformer {
     }
     AttributeGroupMetacard wrapped = new AttributeGroupMetacard(metacard);
     return new FieldFilter(wrapped, wrapped.getGroupDescriptors());
-  }
-
-  private VisitableXmlElement makeVisitable(JAXBElement element) {
-    return new VisitableXmlElementImpl(element);
   }
 }
