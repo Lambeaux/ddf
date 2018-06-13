@@ -210,13 +210,13 @@ public class AuthzRealm extends AbstractAuthorizingRealm {
     if (!CollectionUtils.isEmpty(perms)) {
       if (permission instanceof KeyValuePermission) {
         permission =
-            new KeyValueCollectionPermission(
+            new ImmutableKeyValueCollectionPermission(
                 CollectionPermission.UNKNOWN_ACTION, (KeyValuePermission) permission);
         LOGGER.debug(
             "Should not execute subject.isPermitted with KeyValuePermission. Instead create a KeyValueCollectionPermission with an action.");
       }
       if (permission != null && permission instanceof KeyValueCollectionPermission) {
-        KeyValueCollectionPermission kvcp = (KeyValueCollectionPermission) permission;
+        KeyValueCollectionPermission kvcp = new ImmutableKeyValueCollectionPermission(permission);
         List<KeyValuePermission> keyValuePermissions = kvcp.getKeyValuePermissionList();
         List<KeyValuePermission> matchOnePermissions = new ArrayList<>();
         List<KeyValuePermission> matchAllPermissions = new ArrayList<>();
@@ -250,21 +250,26 @@ public class AuthzRealm extends AbstractAuthorizingRealm {
         }
 
         CollectionPermission subjectAllCollection =
-            new CollectionPermission(CollectionPermission.UNKNOWN_ACTION, perms);
+            new MatchAllCollectionPermission(perms);
+        MatchOneCollectionPermission subjectOneCollection = new MatchOneCollectionPermission(perms);
         KeyValueCollectionPermission matchAllCollection =
-            new KeyValueCollectionPermission(kvcp.getAction(), matchAllPermissions);
+            new ImmutableKeyValueCollectionPermission(kvcp.getAction(), matchAllPermissions);
         KeyValueCollectionPermission matchAllPreXacmlCollection =
-            new KeyValueCollectionPermission(kvcp.getAction(), matchAllPreXacmlPermissions);
+            new ImmutableKeyValueCollectionPermission(kvcp.getAction(), matchAllPreXacmlPermissions);
         KeyValueCollectionPermission matchOneCollection =
-            new KeyValueCollectionPermission(kvcp.getAction(), matchOnePermissions);
+            new ImmutableKeyValueCollectionPermission(kvcp.getAction(), matchOnePermissions);
 
+        // Things that can go wrong with policy extensions
+        // -- Return the wrong collection and pass it further down the PDP
+        // -- Add things to the collection that leak to the PDP (change subject permission)
+        // -- Permissions WITHIN a collection must ALSO be immutable
+        // --
         matchAllCollection =
             isPermittedByExtensionAll(subjectAllCollection, matchAllCollection, kvcp);
         matchAllPreXacmlCollection =
             isPermittedByExtensionAll(subjectAllCollection, matchAllPreXacmlCollection, kvcp);
         matchOneCollection =
-            isPermittedByExtensionOne(subjectAllCollection, matchOneCollection, kvcp);
-        MatchOneCollectionPermission subjectOneCollection = new MatchOneCollectionPermission(perms);
+            isPermittedByExtensionOne(subjectOneCollection, matchOneCollection, kvcp);
 
         boolean matchAll = subjectAllCollection.implies(matchAllCollection);
         boolean matchAllXacml = subjectAllCollection.implies(matchAllPreXacmlCollection);

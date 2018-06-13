@@ -110,12 +110,13 @@ public class ShareableMetacardPolicyExtension implements PolicyExtension {
       CollectionPermission subject,
       KeyValueCollectionPermission match,
       KeyValueCollectionPermission allPerms) {
-    List<KeyValuePermission> permissions = getPermissions(allPerms);
+    List<KeyValuePermission> permissions = getPermissions(match);
     Map<String, Set<String>> grouped = groupPermissionsByKey(permissions);
     if (Collections.disjoint(grouped.keySet(), SHARED_PERMISSIONS_IMPLIED)) {
       return match; // ignore all but shareable permissions
     }
 
+<<<<<<< Updated upstream
     boolean isSystem = systemImplied(subject);
     boolean isOwner = ownerImplied(subject, grouped);
     boolean hasAccessIndividuals = individualsImplied(subject, grouped);
@@ -149,6 +150,50 @@ public class ShareableMetacardPolicyExtension implements PolicyExtension {
     KeyValueCollectionPermission collection = new KeyValueCollectionPermission(match.getAction());
     collection.addAll(remaining);
     return collection;
+=======
+    boolean isSystem = system(subject);
+    boolean isOwner = owner(subject, grouped);
+    boolean hasAccessIndividuals = individuals(subject, grouped);
+    boolean hasAccessGroups = groups(subject, grouped);
+
+    // get all permissions implied by the subject
+    Supplier<Set<String>> impliedPermissions =
+        () -> {
+          if (isSystem || isOwner) {
+            return grouped.keySet(); // all permissions are implied
+          } else if (hasAccessIndividuals || hasAccessGroups) {
+            return SHARED_PERMISSIONS_IMPLIED;
+          } else {
+            return Constants.SHAREABLE_TAGS;
+          }
+        };
+
+    // filter out all implied permissions
+    Function<Set<String>, KeyValueCollectionPermission> filterPermissions =
+        (impliedKeys) -> {
+          KeyValueCollectionPermission implied =
+              new KeyValueCollectionPermission(
+                  match.getAction(),
+                  impliedKeys
+                      .stream()
+                      .map(key -> new KeyValuePermission(key, grouped.get(key)))
+                      .collect(Collectors.toList()));
+
+          List<Permission> remaining =
+              match
+                  .<Permission>getKeyValuePermissionList()
+                  .stream()
+                  .filter(p -> !implied.implies(p))
+                  .collect(Collectors.toList());
+
+          KeyValueCollectionPermission collection =
+              new KeyValueCollectionPermission(match.getAction());
+          collection.addAll(remaining);
+          return collection;
+        };
+
+    return filterPermissions.apply(impliedPermissions.get());
+>>>>>>> Stashed changes
   }
 
   @Override
@@ -164,9 +209,13 @@ public class ShareableMetacardPolicyExtension implements PolicyExtension {
       CollectionPermission subject,
       KeyValueCollectionPermission matchOne,
       KeyValueCollectionPermission allPermissionsCollection) {
+<<<<<<< Updated upstream
     return isPermitted(
         new MatchOneCollectionPermission(subject.getPermissionList()),
         matchOne,
         allPermissionsCollection);
+=======
+    return isPermitted(new MatchOneCollectionPermission(subject.getPermissionList()), matchOne, allPermissionsCollection);
+>>>>>>> Stashed changes
   }
 }
