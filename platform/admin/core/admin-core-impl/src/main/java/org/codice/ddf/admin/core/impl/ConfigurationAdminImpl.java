@@ -82,6 +82,8 @@ public class ConfigurationAdminImpl implements org.codice.ddf.admin.core.api.Con
 
   private static final Map<Long, String> BUNDLE_LOCATIONS = new ConcurrentHashMap<>();
 
+  private static final String FELIX_FILEINSTALL_FILENAME = "felix.fileinstall.filename";
+
   private final ConfigurationAdmin configurationAdmin;
 
   private final Map<String, ServiceTracker> services = new HashMap<String, ServiceTracker>();
@@ -719,6 +721,9 @@ public class ConfigurationAdminImpl implements org.codice.ddf.admin.core.api.Con
     String disabledServiceFactoryPid = originalFactoryPid + ConfigurationStatus.DISABLED_EXTENSION;
     properties.put(
         org.osgi.service.cm.ConfigurationAdmin.SERVICE_FACTORYPID, disabledServiceFactoryPid);
+
+    updateFelixFileLink(properties);
+
     Configuration disabledConfig =
         configurationAdmin.createFactoryConfiguration(disabledServiceFactoryPid, null);
     disabledConfig.update(properties);
@@ -744,14 +749,31 @@ public class ConfigurationAdminImpl implements org.codice.ddf.admin.core.api.Con
     String enabledFactoryPid =
         StringUtils.removeEnd(disabledFactoryPid, ConfigurationStatus.DISABLED_EXTENSION);
     properties.put(org.osgi.service.cm.ConfigurationAdmin.SERVICE_FACTORYPID, enabledFactoryPid);
+
+    updateFelixFileLink(properties);
+
     Configuration enabledConfiguration =
         configurationAdmin.createFactoryConfiguration(enabledFactoryPid, null);
     enabledConfiguration.update(properties);
 
     disabledConfig.delete();
-
     return new ConfigurationStatusImpl(
         enabledFactoryPid, enabledConfiguration.getPid(), disabledFactoryPid, servicePid);
+  }
+
+  private static void updateFelixFileLink(Dictionary<String, Object> props) {
+    final String filePath = (String) props.get(FELIX_FILEINSTALL_FILENAME);
+    final int indexOfLastDot = filePath.lastIndexOf('.');
+
+    final String pathOnly = filePath.substring(0, indexOfLastDot);
+    final String extensionOnly = filePath.substring(indexOfLastDot);
+
+    final String updatedFilePath =
+        (StringUtils.endsWith(pathOnly, ConfigurationStatus.DISABLED_EXTENSION))
+            ? StringUtils.removeEnd(pathOnly, ConfigurationStatus.DISABLED_EXTENSION)
+            : pathOnly + ConfigurationStatus.DISABLED_EXTENSION;
+
+    props.put(FELIX_FILEINSTALL_FILENAME, updatedFilePath + extensionOnly);
   }
 
   /**
