@@ -85,6 +85,53 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.jvnet.jaxb2.maven2</groupId>
+                <artifactId>maven-jaxb2-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-filter-objects</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <schemas>
+                        <schema>
+                            <url>http://schemas.opengis.net/filter/2.0/filterAll.xsd</url>
+                        </schema>
+                    </schemas>
+                    <!--<bindings>-->
+                        <!--<binding>src/main/resources/bindings/filter-v_2_0.xjb</binding>-->
+                    <!--</bindings>-->
+                    <!--<schemaDirectory>src/main/resources/schemas</schemaDirectory>-->
+                    <!--<schemaIncludes>-->
+                        <!--<include>filter.xsd</include>-->
+                    <!--</schemaIncludes>-->
+                    <bindingDirectory>src/main/resources/bindings</bindingDirectory>
+                    <bindingIncludes>
+                        <include>filter-v_2_0.xjb</include>
+                    </bindingIncludes>
+                </configuration>
+            </plugin>
+            <!--<plugin>-->
+            <!--<artifactId>maven-antrun-plugin</artifactId>-->
+            <!--<executions>-->
+            <!--<execution>-->
+            <!--<phase>process-sources</phase>-->
+            <!--<configuration>-->
+            <!--<target>-->
+            <!--<delete dir="${basedir}/target/generated-sources/xjc/net/opengis/ows"/>-->
+            <!--<delete dir="${basedir}/target/generated-sources/xjc" includes="OWS*.*"/>-->
+            <!--</target>-->
+            <!--</configuration>-->
+            <!--<goals>-->
+            <!--<goal>run</goal>-->
+            <!--</goals>-->
+            <!--</execution>-->
+            <!--</executions>-->
+            <!--</plugin>-->
+            <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <executions>

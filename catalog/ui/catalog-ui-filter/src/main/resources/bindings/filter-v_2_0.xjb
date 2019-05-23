@@ -1,0 +1,43 @@
+<jaxb:bindings version="1.0" xmlns:jaxb="http://java.sun.com/xml/ns/jaxb"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
+	jaxb:extensionBindingPrefixes="xjc">
+
+	<jaxb:globalBindings
+    	fixedAttributeAsConstantProperty="true"
+    	typesafeEnumBase="xs:string"
+    	typesafeEnumMemberName="generateName"
+    	generateIsSetMethod="true"
+    	generateMixedExtensions="true">
+
+    	<xjc:noValidator />
+    	<xjc:noValidatingUnmarshaller />
+    </jaxb:globalBindings>
+
+    <jaxb:bindings
+        schemaLocation="https://www.w3.org/1999/xlink.xsd">
+        <jaxb:schemaBindings>
+        	<jaxb:package name="org.codice.xlink"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+    <jaxb:bindings
+        schemaLocation="http://schemas.opengis.net/ows/1.1.0/owsAll.xsd">
+        <jaxb:schemaBindings>
+            <jaxb:package name="org.codice.ows.v_1_1"/>
+        </jaxb:schemaBindings>
+    </jaxb:bindings>
+
+	<jaxb:bindings
+		schemaLocation="http://schemas.opengis.net/filter/2.0/filter.xsd"
+		node="/xs:schema">
+		<jaxb:schemaBindings>
+			<jaxb:package name="org.codice.filter.v_2_0"/>
+		</jaxb:schemaBindings>
+
+		<jaxb:bindings node="xs:complexType[@name='BinaryLogicOpType']//xs:choice">
+			<jaxb:property name="Ops"/>
+		</jaxb:bindings>
+	</jaxb:bindings>
+
+</jaxb:bindings>
